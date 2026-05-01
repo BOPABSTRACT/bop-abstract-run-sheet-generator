@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Oil & Gas Run Sheet Generator</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+
+        * {
+
+            margin: 0;
+
+            padding: 0;
+
+            box-sizing: border-box;
+
+        }
+
+
+
+        body {
+
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+
+            min-height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 20px;
+
+        }
+
+
+
+        .container {
+
+            background: white;
+
+            border-radius: 10px;
+
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+
+            max-width: 800px;
+
+            width: 100%;
+
+            padding: 40px;
+
+        }
+
+
+
+        h1 {
+
+            color: #1e3c72;
+
+            margin-bottom: 10px;
+
+            font-size: 28px;
+
+        }
+
+
+
+        .subtitle {
+
+            color: #666;
+
+            margin-bottom: 30px;
+
+            font-size: 14px;
+
+        }
+
+
+
+        .form-group {
+
+            margin-bottom: 20px;
+
+        }
+
+
+
+        label {
+
+            display: block;
+
+            margin-bottom: 8px;
+
+            color: #333;
+
+            font-weight: 500;
+
+            font-size: 14px;
+
+        }
+
+
+
+        input[type="text"],
+
+        input[type="number"],
+
+        textarea {
+
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #ddd;
+
+            border-radius: 5px;
+
+            font-size: 14px;
+
+            font-family: inherit;
+
+            transition: border-color 0.3s;
+
+        }
+
+
+
+        input[type="text"]:focus,
+
+        input[type="number"]:focus,
+
+        textarea:focus {
+
+            outline: none;
+
+            border-color: #2a5298;
+
+            box-shadow: 0 0 5px rgba(42, 82, 152, 0.2);
+
+        }
+
+
+
+        textarea {
+
+            resize: vertical;
+
+            min-height: 80px;
+
+        }
+
+
+
+        .file-input-wrapper {
+
+            position: relative;
+
+            display: inline-block;
+
+            width: 100%;
+
+        }
+
+
+
+        .file-input-label
+
+
+
+
+
