@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Oil & Gas Run Sheet Generator</title>
+
+    <style>
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            background: linear-gradient(to right, #D2691E 0%, #808080 100%);
+
+            margin: 0;
+
+            padding: 20px;
+
+        }
+
+        .container {
+
+            max-width: 800px;
+
+            margin: 0 auto;
+
+            background: white;
+
+            padding: 30px;
+
+            border-radius: 8px;
+
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+        }
+
+        h1 {
+
+            color: #D2691E;
+
+            text-align: center;
+
+            margin-bottom: 30px;
+
+        }
+
+        .form-group {
+
+            margin-bottom: 20px;
+
+        }
+
+        label {
+
+            display: block;
+
+            margin-bottom: 8px;
+
+            font-weight: bold;
+
+            color: #333;
+
+        }
+
+        input, textarea, select {
+
+            width: 100%;
+
+            padding: 12px;
+
+            border: 1px solid #ddd;
+
+            border-radius: 4px;
+
+            box-sizing: border-box;
+
+            font-size: 14px;
+
+        }
+
+        textarea {
+
+            min-height: 100px;
+
+            resize: vertical;
+
+        }
+
+        button {
+
+            width: 100%;
+
+            padding: 15px;
+
+            background: #D2691E;
+
+            color: white;
+
+            border: none;
+
+            border-radius: 4px;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            margin-top: 20px;
+
+        }
+
+        button:hover {
+
+            background: #A0522D;
+
+        }
+
+        button:active {
+
+            transform: scale(0.98);
+
+        }
+
+        #message {
+
+            margin-top: 20px;
+
+            padding: 15px;
+
+            border-radius: 4px;
+
+            display: none;
+
+        }
+
+        #message.success {
+
+            background: #d4edda;
+
+            color: #155724;
+
+            border: 1px solid #c3e6cb;
+
+            display: block;
+
+        }
+
+        #message.error {
+
+            background: #f8d7da;
+
+            color: #721c24;
+
+            border: 1px solid #f5c6cb;
+
+            display: block;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Oil & Gas Run Sheet Generator</h1>
+
+        
+
+        <form id="runSheetForm">
+
+            <div class="form-group">
+
+                <label for="abstractorName">Abstractor Name *</label>
+
+                <input type="text" id="abstractorName" required placeholder="Enter your name">
+
+            </div>
+
+            
+
+            <div class="form-group">
+
+                <label for="propertyDesc">Property Description *</label>
+
+                <textarea id="propertyDesc" required placeholder="Enter property description"></textarea>
+
+            </div>
+
+            
+
+            <div class="form-group">
+
+                <label for="parcelNum">Parcel Number</label>
+
+                <input type="text" id="parcelNum" placeholder="e.g., 12-22-7">
+
+            </div>
+
+            
+
+            <div class="form-group">
+
+                <label for="acreage">Acreage</label>
+
+                <input type="text" id="acreage" placeholder="e.g., 16.4">
+
+            </div>
+
+            
+
+            <div class="form-group">
+
+                <label for="district">District</label>
+
+                <input type="text" id="district" placeholder="e.g., Mannington District">
+
+            </div>
+
+            
+
+            <div class="form-group">
+
+                <label for="county">County</label>
+
+                <input type="text" id="county" placeholder="e.g., Marion">
+
+            </div>
+
+            
+
+            <div class="form-group">
+
+                <label for="fileUpload">Upload PDFs</label>
+
+                <input type="file" id="fileUpload" multiple accept=".pdf">
+
+            </div>
+
+            
+
+            <button type="button" onclick="generateRunSheet()">Generate Run Sheet</button>
+
+            
+
+            <div id="message"></div>
+
+        </form>
+
+    </div>
+
+
+
+    <script>
+
+        function generateRunSheet() {
+
+            const abstractorName = document.getElementById('abstractorName').value;
+
+            const propertyDesc = document.getElementById('propertyDesc').value;
+
+            const parcelNum = document.getElementById('parcelNum').value;
+
+            const acreage = document.getElementById('acreage').value;
+
+            const district = document.getElementById('district').value;
+
+            const county = document.getElementById('county').value;
+
+            const files = document.getElementById('fileUpload').files;
+
+            const messageDiv = document.getElementById('message');
+
+            
+
+            if (!abstractorName || !propertyDesc) {
+
+                showMessage('Please fill in required fields', 'error');
+
+                return;
+
+            }
+
+            
+
+            showMessage('Generating run sheet...', 'success');
+
+            
+
+            setTimeout(() => {
+
+                downloadExcel(abstractorName, propertyDesc, parcelNum, acreage, district, county);
+
+                showMessage('Run sheet generated and downloaded!', 'success');
+
+            }, 1000);
+
+        }
+
+        
+
+        function downloadExcel(abstractorName, propertyDesc, parcelNum, acreage, district, county) {
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            csvContent += "RUN SHEET - " + abstractorName + "\n";
+
+            csvContent += "Property: " + propertyDesc + "\n";
+
+            csvContent += "Parcel: " + parcelNum + "\n";
+
+            csvContent += "Acreage: " + acreage + "\n";
+
+            csvContent += "District: " + district + "\n";
+
+            csvContent += "County: " + county + "\n\n";
+
+            csvContent += "VOL/PAGE,Instrument Type,Doc Date,Recorded Date,Grantor,Grantee,Description,Comments\n";
+
+            
+
+            let encodedUri = encodeURI(csvContent);
+
+            let link = document.createElement("a");
+
+            link.setAttribute("href", encodedUri);
+
+            link.setAttribute("download", "RunSheet_" + abstractorName + ".csv");
+
+            document.body.appendChild(link);
+
+            link.click();
+
+        }
+
+        
+
+        function showMessage(msg, type) {
+
+            const messageDiv = document.getElementById('message');
+
+            messageDiv.textContent = msg;
+
+            messageDiv.className = type;
+
+        }
+
+    </script>
+
+</body>
+
+</html>
