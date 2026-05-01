@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Run Sheet Generator</title>
+
+    <style>
+
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: white; }
+
+        .container { max-width: 600px; margin: 0 auto; }
+
+        h1 { color: #333; }
+
+        .form-group { margin-bottom: 15px; }
+
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+
+        input, textarea { width: 100%; padding: 8px; box-sizing: border-box; }
+
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
+
+        button:hover { background-color: #0056b3; }
+
+        #message { margin-top: 15px; padding: 10px; border-radius: 5px; }
+
+        .success { background-color: #d4edda; color: #155724; }
+
+        .error { background-color: #f8d7da; color: #721c24; }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>Oil & Gas Title Run Sheet Generator</h1>
+
+        <div class="form-group">
+
+            <label>Abstractor Name *</label>
+
+            <input type="text" id="abstractorName" placeholder="Enter your name">
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Property Description *</label>
+
+            <textarea id="propertyDescription" rows="3" placeholder="Enter property description"></textarea>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Upload Documents (PDF) *</label>
+
+            <input type="file" id="fileInput" multiple accept=".pdf">
+
+        </div>
+
+        <button onclick="generateRunSheet()">Generate Run Sheet</button>
+
+        <div id="message"></div>
+
+    </div>
+
+    <script>
+
+        async function generateRunSheet() {
+
+            const abstractorName = document.getElementById('abstractorName').value;
+
+            const propertyDescription = document.getElementById('propertyDescription').value;
+
+            const fileInput = document.getElementById('fileInput');
+
+            const messageDiv = document.getElementById('message');
+
+            
+
+            if (!abstractorName || !propertyDescription) {
+
+                messageDiv.textContent = 'Please fill in all required fields';
+
+                messageDiv.className = 'error';
+
+                return;
+
+            }
+
+            
+
+            if (fileInput.files.length === 0) {
+
+                messageDiv.textContent = 'Please select at least one PDF file';
+
+                messageDiv.className = 'error';
+
+                return;
+
+            }
+
+            
+
+            messageDiv.textContent = 'Processing documents...';
+
+            messageDiv.className
