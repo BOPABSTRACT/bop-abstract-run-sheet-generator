@@ -1,0 +1,162 @@
+
+Bennett Wood
+4:21 PM (0 minutes ago)
+to me
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oil & Gas Run Sheet Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(135deg, #ff8c00 0%, #1a1a1a 100%);
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #ff8c00;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: Arial;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #ff8c00;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #ff8c00;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #e67e00;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Oil & Gas Title Run Sheet Generator</h1>
+        <form id="form">
+            <div class="form-group">
+                <label for="abstractorName">Abstractor Name *</label>
+                <input type="text" id="abstractorName" required placeholder="Enter your name">
+            </div>
+            <div class="form-group">
+                <label for="propertyDesc">Property Description *</label>
+                <textarea id="propertyDesc" required placeholder="Enter property description" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="parcelNo">Parcel Number</label>
+                <input type="text" id="parcelNo" placeholder="e.g., 12-22-7">
+            </div>
+            <div class="form-group">
+                <label for="acreage">Acreage</label>
+                <input type="text" id="acreage" placeholder="e.g., 16.4">
+            </div>
+            <div class="form-group">
+                <label for="district">District</label>
+                <input type="text" id="district" placeholder="e.g., Mannington District">
+            </div>
+            <div class="form-group">
+                <label for="county">County</label>
+                <input type="text" id="county" placeholder="e.g., Marion">
+            </div>
+            <div class="form-group">
+                <label for="files">Upload PDFs</label>
+                <input type="file" id="files" multiple accept=".pdf">
+            </div>
+            <button type="button" onclick="generateSheet()">Generate Run Sheet</button>
+        </form>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        function generateSheet() {
+            const abstractorName = document.getElementById('abstractorName').value;
+            const propertyDesc = document.getElementById('propertyDesc').value;
+            const parcelNo = document.getElementById('parcelNo').value;
+            const acreage = document.getElementById('acreage').value;
+            const district = document.getElementById('district').value;
+            const county = document.getElementById('county').value;
+            const messageDiv = document.getElementById('message');
+
+            if (!abstractorName || !propertyDesc) {
+                messageDiv.className = 'error';
+                messageDiv.textContent = '❌ Please fill in required fields';
+                return;
+            }
+
+            messageDiv.className = '';
+            messageDiv.textContent = 'Generating Excel file...';
+
+            try {
+                const wb = XLSX.utils.book_new();
+                const wsData = [
+                    ['RUN SHEET - ' + abstractorName + ' - CHAIN OF TITLE'],
+                    ['Abstractor Name:', abstractorName, '', 'Due Date:', 'N/A'],
+                    ['Description:', propertyDesc],
+                    ['Current Parcel Nos.:', parcelNo, '', 'Current Acreage:', acreage,
