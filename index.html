@@ -1,132 +1,149 @@
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
 
 <head>
 
-    <title>Run Sheet Generator</title>
+    <meta charset="UTF-8">
 
-</head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<body style="font-family: Arial; margin: 20px;">
+    <title>Oil & Gas Title Run Sheet Generator</title>
 
-    <h1>Oil & Gas Title Run Sheet Generator</h1>
+    <style>
 
-    
+        * {
 
-    <label>Abstractor Name:</label><br>
+            margin: 0;
 
-    <input type="text" id="abstractorName" placeholder="Enter name"><br><br>
+            padding: 0;
 
-    
-
-    <label>Property Description:</label><br>
-
-    <input type="text" id="propertyDescription" placeholder="Enter description"><br><br>
-
-    
-
-    <label>Upload PDFs:</label><br>
-
-    <input type="file" id="fileInput" multiple accept=".pdf"><br><br>
-
-    
-
-    <button onclick="generateSheet()">Generate Run Sheet</button><br><br>
-
-    
-
-    <p id="message"></p>
-
-    
-
-    <script>
-
-        function generateSheet() {
-
-            const name = document.getElementById('abstractorName').value;
-
-            const desc = document.getElementById('propertyDescription').value;
-
-            const files = document.getElementById('fileInput').files;
-
-            const msg = document.getElementById('message');
-
-            
-
-            if (!name || !desc) {
-
-                msg.textContent = 'Please fill in all fields';
-
-                return;
-
-            }
-
-            
-
-            if (files.length === 0) {
-
-                msg.textContent = 'Please upload at least one PDF';
-
-                return;
-
-            }
-
-            
-
-            msg.textContent = 'Processing ' + files.length + ' file(s)...';
-
-            
-
-            const formData = new FormData();
-
-            for (let i = 0; i < files.length; i++) {
-
-                formData.append('files', files[i]);
-
-            }
-
-            formData.append('abstractorName', name);
-
-            formData.append('propertyDescription', desc);
-
-            
-
-            fetch('/api/process', {
-
-                method: 'POST',
-
-                body: formData
-
-            })
-
-            .then(res => res.json())
-
-            .then(data => {
-
-                if (data.success) {
-
-                    msg.textContent = 'Success! Run sheet generated.';
-
-                } else {
-
-                    msg.textContent = 'Error: ' + data.error;
-
-                }
-
-            })
-
-            .catch(err => {
-
-                msg.textContent = 'Error: ' + err.message;
-
-            });
+            box-sizing: border-box;
 
         }
 
-    </script>
+        body {
 
-</body>
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 
-</html>
+            min-height: 100vh;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+            padding: 20px;
+
+        }
+
+        .container {
+
+            background: white;
+
+            border-radius: 12px;
+
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+            padding: 40px;
+
+            max-width: 600px;
+
+            width: 100%;
+
+        }
+
+        h1 {
+
+            color: #333;
+
+            margin-bottom: 10px;
+
+            font-size: 28px;
+
+        }
+
+        .subtitle {
+
+            color: #666;
+
+            margin-bottom: 30px;
+
+            font-size: 14px;
+
+        }
+
+        .form-group {
+
+            margin-bottom: 25px;
+
+        }
+
+        label {
+
+            display: block;
+
+            color: #333;
+
+            font-weight: 600;
+
+            margin-bottom: 8px;
+
+            font-size: 14px;
+
+        }
+
+        input[type="text"],
+
+        input[type="file"],
+
+        select {
+
+            width: 100%;
+
+            padding: 12px;
+
+            border: 2px solid #e0e0e0;
+
+            border-radius: 6px;
+
+            font-size: 14px;
+
+            transition: border-color 0.3s;
+
+        }
+
+        input[type="text"]:focus,
+
+        input[type="file"]:focus,
+
+        select:focus {
+
+            outline: none;
+
+            border-color: #667eea;
+
+        }
+
+        .file-count {
+
+            color: #666;
+
+            font-size: 13px;
+
+            margin-top: 8px;
+
+        }
+
+        button {
+
+            width: 100%;
+
+            padding: 14px;
+
+            background: linear
+
 
