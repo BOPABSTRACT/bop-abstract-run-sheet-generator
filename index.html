@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <title>Run Sheet Generator</title>
+
+    <style>
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            max-width: 800px;
+
+            margin: 50px auto;
+
+            padding: 20px;
+
+            background-color: #f5f5f5;
+
+        }
+
+        h1 {
+
+            color: #333;
+
+        }
+
+        .form-group {
+
+            margin-bottom: 20px;
+
+        }
+
+        label {
+
+            display: block;
+
+            margin-bottom: 5px;
+
+            font-weight: bold;
+
+            color: #333;
+
+        }
+
+        input[type="text"],
+
+        input[type="file"],
+
+        select {
+
+            width: 100%;
+
+            padding: 10px;
+
+            border: 1px solid #ddd;
+
+            border-radius: 4px;
+
+            box-sizing: border-box;
+
+            font-size: 14px;
+
+        }
+
+        button {
+
+            background-color: #0070f3;
+
+            color: white;
+
+            padding: 12px 24px;
+
+            border: none;
+
+            border-radius: 4px;
+
+            cursor: pointer;
+
+            font-size: 16px;
+
+            width: 100%;
+
+        }
+
+        button:hover {
+
+            background-color: #0051cc;
+
+        }
+
+        button:disabled {
+
+            background-color: #ccc;
+
+            cursor: not-allowed;
+
+        }
+
+        .message {
+
+            margin-top: 20px;
+
+            padding: 15px;
+
+            border-radius: 4px;
+
+            display: none;
+
+        }
+
+        .message.success {
+
+            background-color: #d4edda;
+
+            color: #155724;
+
+            border: 1px solid #c3e6cb;
+
+            display: block;
+
+        }
+
+        .message.error {
+
+            background-color: #f8d7da;
+
+            color: #721c24;
+
+            border: 1px solid #f5c6cb;
+
+            display: block;
+
+        }
+
+        .file-count {
+
+            margin-top: 10px;
+
+            color: #666;
+
+            font-size: 14px;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <h1>Oil & Gas Title Run Sheet Generator</h1>
+
+    
+
+    <div class="form-group">
+
+        <label for="abstractorName">Abstractor Name *</label>
+
+        <input type="text" id="abstractorName" placeholder="Enter your name" required>
+
+    </div>
+
+
+
+    <div class="form-group">
+
+        <label for="propertyDescription">Property Description *</label>
+
+        <input type="text" id="propertyDescription" placeholder="Enter property description" required>
+
+    </div>
+
+
+
+    <div class="form-group">
+
+        <label for="parcelNo">Parcel Number</label>
+
+        <input type="text" id="parcelNo" placeholder="e.g., 12-22-7">
+
+    </div>
+
+
+
+    <div class="form-group">
+
+        <label for="acreage">Acreage</label>
+
+        <input type="text" id="acreage" placeholder="e.g., 16.4">
+
+    </div>
+
+
+
+    <div class="form-group">
+
+        <label for="district">District</label>
+
+        <input type="text" id="district" placeholder="e.g., Mannington District">
+
+    </div>
+
+
+
+    <div class="form-group">
+
+        <label for="county">County</label>
+
+        <input type="text" id="county" placeholder="e.g., Marion">
+
+    </div>
+
+
+
+    <div class="form-group">
+
+        <label for="state">State</label>
+
+        <input type="text" id="state" placeholder="e.g., West Virginia">
+
+    </div>
+
+
+
+    <div class="form-group">
+
+        <label for="files">Upload Documents (PDF)</label>
+
+        <input type="file" id="files" multiple accept=".pdf">
+
+        <div class="file-count" id="fileCount"></div>
+
+    </div>
+
+
+
+    <button onclick="generateRunSheet()" id="generateBtn">Generate Run Sheet</button>
+
+
+
+    <div class="message" id="message"></div>
+
+
+
+    <script>
+
+        document.getElementById('files').addEventListener('change', function() {
+
+            const count = this.files.length;
+
+            const fileCountDiv = document.getElementById('fileCount');
+
+            if (count > 0) {
+
+                fileCountDiv.textContent = count + ' file(s) selected';
+
+            } else {
+
+                fileCountDiv.textContent = '';
+
+            }
+
+        });
+
+
+
+        function generateRunSheet() {
+
+            const abstractorName = document.getElementById('abstractorName').value;
+
+            const propertyDescription = document.getElementById('propertyDescription').value;
+
+            const parcelNo = document.getElementById('parcelNo').value;
+
+            const acreage = document.getElementById('acreage').value;
+
+            const district = document.getElementById('district').value;
+
+            const county = document.getElementById('county').value;
+
+            const state = document.getElementById('state').value;
+
+            const files = document.getElementById('files').files;
+
+            const message
