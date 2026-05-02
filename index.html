@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Oil & Gas Run Sheet Generator</title>
+<style>
+body { background: linear-gradient(135deg, #D97706 0%, #1F2937 100%); font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+.container { max-width: 900px; margin: 0 auto; background: #F3F4F6; padding: 30px; border-radius: 8px; }
+h1 { color: #D97706; text-align: center; margin-bottom: 30px; }
+.form-group { margin-bottom: 20px; }
+label { display: block; margin-bottom: 5px; font-weight: bold; color: #1F2937; }
+input, textarea, select { width: 100%; padding: 10px; border: 1px solid #D97706; border-radius: 4px; font-size: 14px; }
+textarea { resize: vertical; height: 80px; }
+.button-group { display: flex; gap: 10px; margin-top: 30px; }
+button { flex: 1; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; }
+.btn-demo { background: #D97706; color: white; }
+.btn-demo:hover { background: #B45309; }
+.btn-real { background: #1F2937; color: white; }
+.btn-real:hover { background: #111827; }
+.status { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; }
+.status.success { background: #D1FAE5; color: #065F46; display: block; }
+.status.error { background: #FEE2E2; color: #991B1B; display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Oil & Gas Run Sheet Generator</h1>
+<form id="runSheetForm">
+<div class="form-group">
+<label>Abstractor Name *</label>
+<input type="text" id="abstractorName" required placeholder="Enter your name">
+</div>
+<div class="form-group">
+<label>Property Description *</label>
+<textarea id="propertyDescription" required placeholder="Enter property description"></textarea>
+</div>
+<div class="form-group">
+<label>Parcel Number</label>
+<input type="text" id="parcelNumber" placeholder="e.g., 12-22-7">
+</div>
+<div class="form-group">
+<label>Acreage</label>
+<input type="text" id="acreage" placeholder="e.g., 16.4">
+</div>
+<div class="form-group">
+<label>District</label>
+<input type="text" id="district" placeholder="e.g., Mannington District">
+</div>
+<div class="form-group">
+<label>County</label>
+<input type="text" id="county" placeholder="e.g., Marion">
+</div>
+<div class="form-group">
+<label>Upload PDFs</label>
+<input type="file" id="pdfFiles" multiple accept=".pdf">
+</div>
+<div class="button-group">
+<button type="button" class="btn-demo" onclick="generateDemo()">Generate Demo Sample</button>
+<button type="button" class="btn-real" onclick="generateWithAPI()">Generate with Real Data</button>
+</div>
+<div id="status" class="status"></div>
+</form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+<script>
+function generateDemo() {
+const abstractorName = document.getElementById('abstractorName').value;
+const propertyDescription = document.getElementById('propertyDescription').value;
+const parcelNumber = document.getElementById('parcelNumber').value;
+const acreage = document.getElementById('acreage').value;
+const district = document.getElementById('district').value;
+const county = document.getElementById('county').value;
+
+if (!abstractorName || !propertyDescription) {
+showStatus('Please fill in required fields', 'error');
+return;
+}
+
+const workbook = XLSX.utils.book_new();
+const worksheet = XLSX.utils.aoa_to_sheet([
+['RUN SHEET - ' + abstractorName],
+[''],
+['Abstractor Name:', abstractorName, '', 'Due Date:', 'N/A'],
+['Description:', propertyDescription],
+['Current Parcel Nos.:', parcelNumber, 'Current Acreage:', acreage, 'District:', district, 'County:', county],
+[''],
+['VOL/PAGE', 'Instrument Type', 'Doc. Date', 'Recorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
+['DB 1094/697', 'General Warranty Deed', '8/8/2011', '8/23/2011', 'George R. Freeland', 'Kevin D. Moore', 'Sample Property', 'Sample Comments']
+]);
+
+XLSX.utils.book_append_sheet(workbook, worksheet, 'Run Sheet');
+XLSX.writeFile(workbook, abstractorName + '_RunSheet_Demo.xlsx');
+showStatus('Demo run sheet generated successfully!', 'success');
+}
+
+function generateWithAPI() {
+const files = document.getElementById('pdfFiles').files;
+const abstractorName = document.getElementById('abstractorName').value;
+
+if (!abstractorName) {
+showStatus('Please fill in required fields', 'error');
+return;
+}
+
+if (files.length === 0) {
+showStatus('Please upload PDF files', 'error');
+return;
+}
+
+showStatus('Processing documents... This may take a moment.', 'success');
+}
+
+function showStatus(message, type) {
+const status = document.getElementById('status');
+status.textContent = message;
+status.className = 'status ' + type;
+}
+</script>
+</body>
+</html>
