@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oil & Gas Run Sheet Generator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #d97706 0%, #1f2937 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #f3f4f6; padding: 40px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        h1 { color: #d97706; text-align: center; margin-bottom: 30px; font-size: 2.5em; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; color: #1f2937; margin-bottom: 8px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #9ca3af; border-radius: 5px; font-family: Arial; font-size: 14px; }
+        textarea { resize: vertical; min-height: 80px; }
+        .button-group { display: flex; gap: 10px; margin-top: 30px; }
+        button { flex: 1; padding: 15px; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; }
+        .btn-demo { background: #d97706; color: white; }
+        .btn-demo:hover { background: #b45309; }
+        .btn-api { background: #1f2937; color: white; }
+        .btn-api:hover { background: #111827; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .message { margin-top: 20px; padding: 15px; border-radius: 5px; display: none; }
+        .success { background: #d1fae5; color: #065f46; display: block; }
+        .error { background: #fee2e2; color: #991b1b; display: block; }
+        .loading { background: #dbeafe; color: #1e40af; display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Oil & Gas Run Sheet Generator</h1>
+
+        <div class="form-group">
+            <label>Abstractor Name *</label>
+            <input type="text" id="abstractorName" placeholder="Enter your name" required>
+        </div>
+
+        <div class="form-group">
+            <label>Property Description *</label>
+            <textarea id="propertyDescription" placeholder="Enter property description" required></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Parcel Number</label>
+            <input type="text" id="parcelNumber" placeholder="e.g., 12-22-7">
+        </div>
+
+        <div class="form-group">
+            <label>Acreage</label>
+            <input type="text" id="acreage" placeholder="e.g., 16.4">
+        </div>
+
+        <div class="form-group">
+            <label>District</label>
+            <input type="text" id="district" placeholder="e.g., Mannington District">
+        </div>
+
+        <div class="form-group">
+            <label>County</label>
+            <input type="text" id="county" placeholder="e.g., Marion">
+        </div>
+
+        <div class="form-group">
+            <label>Upload PDFs</label>
+            <input type="file" id="fileInput" multiple accept=".pdf">
+        </div>
+
+        <div class="button-group">
+            <button class="btn-demo" onclick="generateDemo()">Generate Demo Sample</button>
+            <button class="btn-api" onclick="generateWithAPI()">Generate with Claude API</button>
+        </div>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script>
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + type;
+        }
+
+        function generateDemo() {
+            const name = document.getElementById('abstractorName').value;
+            const desc = document.getElementById('propertyDescription').value;
+
+            if (!name || !desc) {
+                showMessage('Please fill in Abstractor Name and Property Description', 'error');
+                return;
+            }
+
+            showMessage('Generating demo run sheet...', 'loading');
+
+            setTimeout(() => {
+                const wb = XLSX.utils.book_new();
+                const data = [
+                    ['RUN SHEET - ' + desc],
+                    ['Abstractor Name:', name],
+                    [],
+                    ['VOL/PAGE', 'Instrument Type', 'Doc. Date', 'Recorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
+                    ['DB 1094/697', 'General Warranty Deed', '8/8/2011', '8/23/2011', 'George R. Freeland', 'Kevin D. Moore', 'Tract of land on Pyles Fork', 'Sample data'],
+                    ['DB 1063/62', 'Special Warranty Deed', '5/4/2010', '5/7/2010', 'Consolidation Coal Company', 'Kevin D. Moore', 'Surface only', 'Sample data']
+                ];
+
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                XLSX.utils.book_append_sheet(wb, ws, 'Run Sheet');
+                XLSX.writeFile(wb, 'RunSheet_' + name + '.xlsx');
+
+                showMessage('✅ Demo run sheet downloaded!', 'success');
+            }, 1000);
+        }
+
+        function generateWithAPI() {
+            const name = document.getElementById('abstractorName').value;
+            const desc = document.getElementById('propertyDescription').value;
+            const files = document.getElementById('fileInput').files;
+
+            if (!name || !desc) {
+                showMessage('Please fill in required fields', 'error');
+                return;
+            }
+
+            if (files.length === 0) {
+                showMessage('Please select PDF files to process', 'error');
+                return;
+            }
+
+            showMessage('Processing with Claude API (this may take 30-60 seconds)...', 'loading');
+
+            const formData = new FormData();
+            formData.append('abstractorName', name);
+            formData.append('propertyDescription', desc);
+            for (let file of files) {
+                formData.append('files', file);
+            }
+
+            fetch('/api/process', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    createExcelFromData(name, desc, data.extractedData);
+                    showMessage('✅ Run sheet generated from PDF analysis!', 'success');
+                } else {
+                    showMessage('Error: ' + data.error, 'error');
+                }
+            })
+            .catch(err => showMessage('Error: ' + err.message, 'error'));
+        }
+
+        function createExcelFromData(name, desc, data) {
+            const wb = XLSX.utils.book_new();
+            const rows = [
+                ['RUN SHEET - ' + desc],
+                ['Abstractor Name:', name],
+                [],
+                ['VOL/PAGE', 'Instrument Type', 'Doc. Date', 'Recorded Date', 'Grantor', 'Grantee', 'Description', 'Comments']
+            ];
+
+            if (data.documents) {
+                data.documents.forEach(doc => {
+                    rows.push([
+                        doc.volPage || '',
+                        doc.instrumentType || '',
+                        doc.docDate || '',
+                        doc.recordedDate || '',
+                        doc.grantor || '',
+                        doc.grantee || '',
+                        doc.description || '',
+                        doc.comments || ''
+                    ]);
+                });
+            }
+
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, 'Run Sheet');
+            XLSX.writeFile(wb, 'RunSheet_' + name + '.xlsx');
+        }
+    </script>
+</body>
+</html>
+
+
