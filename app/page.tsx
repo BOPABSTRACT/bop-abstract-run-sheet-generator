@@ -30,7 +30,6 @@ export default function Home() {
   const [district, setDistrict] = useState('');
   const [county, setCounty] = useState('');
   const [files, setFiles] = useState<FileList | null>(null);
-
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [rows, setRows] = useState<InstrumentRow[]>([]);
@@ -74,52 +73,31 @@ export default function Home() {
       showStatus('Please upload at least one PDF file', 'error');
       return;
     }
-
     setIsProcessing(true);
     setRows([]);
     setErrors([]);
-    showStatus(
-      `Processing ${files.length} document(s)... This typically takes 10-30 seconds per file.`,
-      'info'
-    );
-
+    showStatus(`Processing ${files.length} document(s)... This typically takes 10-30 seconds per file.`, 'info');
     try {
       const formData = new FormData();
       for (let i = 0; i < files.length; i++) {
         formData.append('files', files[i]);
       }
-
-      const res = await fetch('/api/extract', {
-        method: 'POST',
-        body: formData,
-      });
-
+      const res = await fetch('/api/extract', { method: 'POST', body: formData });
       if (!res.ok) {
         const errText = await res.text();
         throw new Error(`Server error (${res.status}): ${errText}`);
       }
-
       const data = await res.json();
-
-      if (data.rows && data.rows.length > 0) {
-        setRows(data.rows);
-      }
-      if (data.errors && data.errors.length > 0) {
-        setErrors(data.errors);
-      }
-
+      if (data.rows && data.rows.length > 0) setRows(data.rows);
+      if (data.errors && data.errors.length > 0) setErrors(data.errors);
       const okCount = (data.rows ?? []).length;
       const errCount = (data.errors ?? []).length;
-
       if (okCount > 0 && errCount === 0) {
         showStatus(`Extracted ${okCount} instrument(s). Review and edit below.`, 'success');
       } else if (okCount > 0 && errCount > 0) {
-        showStatus(
-          `Extracted ${okCount} instrument(s). ${errCount} file(s) had errors — see below.`,
-          'info'
-        );
+        showStatus(`Extracted ${okCount} instrument(s). ${errCount} file(s) had errors.`, 'info');
       } else {
-        showStatus(`No instruments extracted. ${errCount} error(s) — see below.`, 'error');
+        showStatus(`No instruments extracted. ${errCount} error(s).`, 'error');
       }
     } catch (err: any) {
       showStatus(`Failed: ${err.message ?? String(err)}`, 'error');
@@ -145,19 +123,14 @@ export default function Home() {
       showStatus('No data to export', 'error');
       return;
     }
-
     const headerRows: any[][] = [
       [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`],
       [],
       ['Abstractor Name:', abstractorName, '', 'Due Date:', 'N/A'],
-      [
-        'Description:',
-        `${propertyDescription}     Current Parcel Nos.: ${parcelNumber}    Current Acreage: ${acreage}    District: ${district}    County: ${county}     State: West Virginia`,
-      ],
+      ['Description:', `${propertyDescription}     Current Parcel Nos.: ${parcelNumber}    Current Acreage: ${acreage}    District: ${district}    County: ${county}     State: West Virginia`],
       [],
       ['VOL/PAGE', 'Instrument Type', 'Doc. Date / Recorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
     ];
-
     const dataRows = rows.map((r) => [
       r.vol_page,
       r.instrument_type,
@@ -167,23 +140,11 @@ export default function Home() {
       r.description,
       r.comments,
     ]);
-
     const allRows = [...headerRows, ...dataRows];
     const ws = XLSX.utils.aoa_to_sheet(allRows);
-
-    ws['!cols'] = [
-      { wch: 18 },
-      { wch: 22 },
-      { wch: 22 },
-      { wch: 35 },
-      { wch: 35 },
-      { wch: 50 },
-      { wch: 40 },
-    ];
-
+    ws['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 35 }, { wch: 35 }, { wch: 50 }, { wch: 40 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Chain of Title');
-
     const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}.xlsx`;
     XLSX.writeFile(wb, filename);
@@ -192,81 +153,45 @@ export default function Home() {
 
   return (
     <div className="container">
-      <h1>Oil & Gas Run Sheet Generator</h1>
+      <h1>Oil &amp; Gas Run Sheet Generator</h1>
 
       <div className="form-group">
         <label>Abstractor Name *</label>
-        <input
-          type="text"
-          value={abstractorName}
-          onChange={(e) => setAbstractorName(e.target.value)}
-          placeholder="Enter your name"
-        />
+        <input type="text" value={abstractorName} onChange={(e) => setAbstractorName(e.target.value)} placeholder="Enter your name" />
       </div>
 
       <div className="form-group">
         <label>Property Description *</label>
-        <textarea
-          value={propertyDescription}
-          onChange={(e) => setPropertyDescription(e.target.value)}
-          placeholder="Enter property description"
-        />
+        <textarea value={propertyDescription} onChange={(e) => setPropertyDescription(e.target.value)} placeholder="Enter property description" />
       </div>
 
       <div className="form-group">
         <label>Parcel Number</label>
-        <input
-          type="text"
-          value={parcelNumber}
-          onChange={(e) => setParcelNumber(e.target.value)}
-          placeholder="e.g., 12-22-7"
-        />
+        <input type="text" value={parcelNumber} onChange={(e) => setParcelNumber(e.target.value)} placeholder="e.g., 12-22-7" />
       </div>
 
       <div className="form-group">
         <label>Acreage</label>
-        <input
-          type="text"
-          value={acreage}
-          onChange={(e) => setAcreage(e.target.value)}
-          placeholder="e.g., 16.4"
-        />
+        <input type="text" value={acreage} onChange={(e) => setAcreage(e.target.value)} placeholder="e.g., 16.4" />
       </div>
 
       <div className="form-group">
         <label>District</label>
-        <input
-          type="text"
-          value={district}
-          onChange={(e) => setDistrict(e.target.value)}
-          placeholder="e.g., Mannington District"
-        />
+        <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="e.g., Mannington District" />
       </div>
 
       <div className="form-group">
         <label>County</label>
-        <input
-          type="text"
-          value={county}
-          onChange={(e) => setCounty(e.target.value)}
-          placeholder="e.g., Marion"
-        />
+        <input type="text" value={county} onChange={(e) => setCounty(e.target.value)} placeholder="e.g., Marion" />
       </div>
 
       <div className="form-group">
         <label>Upload PDFs</label>
-        <input
-          type="file"
-          multiple
-          accept=".pdf"
-          onChange={(e) => setFiles(e.target.files)}
-        />
+        <input type="file" multiple accept=".pdf" onChange={(e) => setFiles(e.target.files)} />
       </div>
 
       <div className="button-group">
-        <button className="btn-demo" onClick={generateDemo} disabled={isProcessing}>
-          Generate Demo Sample
-        </button>
+        <button className="btn-demo" onClick={generateDemo} disabled={isProcessing}>Generate Demo Sample</button>
         <button className="btn-real" onClick={generateWithAPI} disabled={isProcessing}>
           {isProcessing ? 'Processing...' : 'Generate with Real Data'}
         </button>
@@ -279,9 +204,7 @@ export default function Home() {
           <h2>Errors</h2>
           <ul>
             {errors.map((e, i) => (
-              <li key={i}>
-                <strong>{e.file}</strong>: {e.error}
-              </li>
+              <li key={i}><strong>{e.file}</strong>: {e.error}</li>
             ))}
           </ul>
         </>
@@ -290,17 +213,43 @@ export default function Home() {
       {rows.length > 0 && (
         <>
           <h2>Review &amp; Edit Extracted Instruments</h2>
-          <p style={{ fontSize: 13, color: '#374151' }}>
-            Confidence color: <span className="conf-high" style={{ padding: '2px 6px' }}>high</span>{' '}
-            <span className="conf-medium" style={{ padding: '2px 6px' }}>medium</span>{' '}
-            <span className="conf-low" style={{ padding: '2px 6px' }}>low — verify carefully</span>
-          </p>
           <div style={{ overflowX: 'auto' }}>
             <table className="results-table">
               <thead>
                 <tr>
-                  <th style={{ width: 100 }}>Source</th>
-                  <th style={{ width: 110 }}>VOL/PAGE</th>
-                  <th style={{ width: 130 }}>Instrument Type</th>
-                  <th style={{ width: 90 }}>Doc Date</th>
-                  <th style
+                  <th>Source</th>
+                  <th>VOL/PAGE</th>
+                  <th>Instrument Type</th>
+                  <th>Doc Date</th>
+                  <th>Recorded Date</th>
+                  <th>Grantor</th>
+                  <th>Grantee</th>
+                  <th>Description</th>
+                  <th>Comments</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, i) => (
+                  <tr key={i} className={`conf-${row.confidence}`}>
+                    <td>{row.source_file}</td>
+                    <td><input value={row.vol_page} onChange={(e) => updateRow(i, 'vol_page', e.target.value)} /></td>
+                    <td><input value={row.instrument_type} onChange={(e) => updateRow(i, 'instrument_type', e.target.value)} /></td>
+                    <td><input value={row.doc_date} onChange={(e) => updateRow(i, 'doc_date', e.target.value)} /></td>
+                    <td><input value={row.recorded_date} onChange={(e) => updateRow(i, 'recorded_date', e.target.value)} /></td>
+                    <td><input value={row.grantor} onChange={(e) => updateRow(i, 'grantor', e.target.value)} /></td>
+                    <td><input value={row.grantee} onChange={(e) => updateRow(i, 'grantee', e.target.value)} /></td>
+                    <td><input value={row.description} onChange={(e) => updateRow(i, 'description', e.target.value)} /></td>
+                    <td><input value={row.comments} onChange={(e) => updateRow(i, 'comments', e.target.value)} /></td>
+                    <td><button onClick={() => deleteRow(i)}>Delete</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <button className="btn-export" onClick={exportToExcel}>Export to Excel</button>
+        </>
+      )}
+    </div>
+  );
+}
