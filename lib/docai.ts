@@ -41,21 +41,25 @@ export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
   const processorId = process.env.GOOGLE_DOCAI_PROCESSOR_ID;
 
   if (!projectId || !processorId) {
-    throw new Error(
-      'Missing GOOGLE_CLOUD_PROJECT_ID or GOOGLE_DOCAI_PROCESSOR_ID env var. See docs/SETUP.md.'
-    );
+    throw new Error('Missing GOOGLE_CLOUD_PROJECT_ID or GOOGLE_DOCAI_PROCESSOR_ID env var.');
   }
 
   const client = getClient();
   const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
 
-  const [result] = await client.processDocument({
-    name,
-    rawDocument: {
-      content: pdfBuffer.toString('base64'),
-      mimeType: 'application/pdf',
-    },
-  });
-
-  return result.document?.text ?? '';
+  try {
+    const [result] = await client.processDocument({
+      name,
+      rawDocument: {
+        content: pdfBuffer.toString('base64'),
+        mimeType: 'application/pdf',
+      },
+    });
+    return result.document?.text ?? '';
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      throw new Error(`Document AI error: ${err.message}`);
+    }
+    throw new Error(`Document AI error: ${JSON.stringify(err)}`);
+  }
 }
