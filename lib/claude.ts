@@ -30,7 +30,7 @@ export async function extractInstruments(
   const client = getClient();
 
   const message = await client.messages.create({
-    model: 'claude-opus-4-20250514',
+    model: 'claude-opus-4-5',
     max_tokens: 2048,
     messages: [
       {
