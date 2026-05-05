@@ -4,26 +4,12 @@ let cachedClient: DocumentProcessorServiceClient | null = null;
 
 function getClient(): DocumentProcessorServiceClient {
   if (cachedClient) return cachedClient;
-
   const keyB64 = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64;
   if (!keyB64) throw new Error('Missing GOOGLE_SERVICE_ACCOUNT_KEY_BASE64');
-
   const keyJson = Buffer.from(keyB64, 'base64').toString('utf-8');
   const credentials = JSON.parse(keyJson);
   cachedClient = new DocumentProcessorServiceClient({ credentials });
   return cachedClient;
-}
-
-function formatError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'object' && err !== null) {
-    const e = err as Record<string, unknown>;
-    if (e.message) return String(e.message);
-    if (e.details) return `gRPC error: ${String(e.details)}`;
-    if (e.code) return `gRPC code ${String(e.code)}`;
-    return JSON.stringify(err);
-  }
-  return String(err);
 }
 
 export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
@@ -38,7 +24,7 @@ export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
   const client = getClient();
   const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
 
- try {
+  try {
     const [result] = await client.processDocument({
       name,
       rawDocument: {
@@ -48,7 +34,11 @@ export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
     });
     return result.document?.text ?? '';
   } catch (err: unknown) {
-    const errStr = JSON.stringify(err, Object.getOwnPropertyNames(err as object));
-    throw new Error(`Document AI failed: ${errStr}`);
+    const props = Object.getOwnPropertyNames(err ?? {});
+    const safe = props.reduce((acc, k) => {
+      acc[k] = String((err as Record<string, unknown>)[k]);
+      return acc;
+    }, {} as Record<string, string>);
+    throw new Error(`DocAI error: ${JSON.stringify(safe)}`);
   }
-  
+}
