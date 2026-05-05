@@ -38,7 +38,7 @@ export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
   const client = getClient();
   const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
 
-  try {
+ try {
     const [result] = await client.processDocument({
       name,
       rawDocument: {
@@ -48,6 +48,7 @@ export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
     });
     return result.document?.text ?? '';
   } catch (err: unknown) {
-    throw new Error(`Document AI failed: ${formatError(err)}`);
+    const errStr = JSON.stringify(err, Object.getOwnPropertyNames(err as object));
+    throw new Error(`Document AI failed: ${errStr}`);
   }
-}
+  
