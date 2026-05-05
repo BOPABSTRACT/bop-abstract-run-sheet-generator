@@ -6,19 +6,24 @@ function getClient(): DocumentProcessorServiceClient {
   if (cachedClient) return cachedClient;
 
   const keyB64 = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64;
-  if (!keyB64) {
-    throw new Error('Missing GOOGLE_SERVICE_ACCOUNT_KEY_BASE64 env var.');
-  }
+  if (!keyB64) throw new Error('Missing GOOGLE_SERVICE_ACCOUNT_KEY_BASE64');
 
-  try {
-    const keyJson = Buffer.from(keyB64, 'base64').toString('utf-8');
-    const credentials = JSON.parse(keyJson);
-    cachedClient = new DocumentProcessorServiceClient({ credentials });
-    return cachedClient;
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : JSON.stringify(err);
-    throw new Error(`Failed to initialize Document AI client: ${msg}`);
+  const keyJson = Buffer.from(keyB64, 'base64').toString('utf-8');
+  const credentials = JSON.parse(keyJson);
+  cachedClient = new DocumentProcessorServiceClient({ credentials });
+  return cachedClient;
+}
+
+function formatError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object' && err !== null) {
+    const e = err as Record<string, unknown>;
+    if (e.message) return String(e.message);
+    if (e.details) return `gRPC error: ${String(e.details)}`;
+    if (e.code) return `gRPC code ${String(e.code)}`;
+    return JSON.stringify(err);
   }
+  return String(err);
 }
 
 export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
@@ -27,12 +32,13 @@ export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
   const processorId = process.env.GOOGLE_DOCAI_PROCESSOR_ID;
 
   if (!projectId || !processorId) {
-    throw new Error('Missing GOOGLE_CLOUD_PROJECT_ID or GOOGLE_DOCAI_PROCESSOR_ID env var.');
+    throw new Error('Missing GOOGLE_CLOUD_PROJECT_ID or GOOGLE_DOCAI_PROCESSOR_ID');
   }
 
+  const client = getClient();
+  const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
+
   try {
-    const client = getClient();
-    const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
     const [result] = await client.processDocument({
       name,
       rawDocument: {
@@ -42,9 +48,6 @@ export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
     });
     return result.document?.text ?? '';
   } catch (err: unknown) {
-    if (err instanceof Error) {
-      throw new Error(`Document AI error: ${err.message}`);
-    }
-    throw new Error(`Document AI error: ${JSON.stringify(err)}`);
+    throw new Error(`Document AI failed: ${formatError(err)}`);
   }
 }
