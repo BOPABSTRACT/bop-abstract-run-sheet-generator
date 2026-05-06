@@ -35,20 +35,21 @@ export async function extractInstruments(
     messages: [
       {
         role: 'user',
-        content: `You are an expert oil and gas title abstractor. Extract all legal instruments from the following OCR text from "${filename}".
+        content: `You are an expert oil and gas title abstractor. Extract all legal instruments from the following OCR text from "${filename}". The text may be from old scanned documents and may contain dots, ellipses, or OCR artifacts — do your best to extract what you can.
 
 For each instrument found, return a JSON array of objects with these exact fields:
-- vol_page: volume and page reference (e.g. "DB 1094/697")
-- instrument_type: type of instrument (e.g. "General Warranty Deed", "Oil and Gas Lease", "Assignment")
-- doc_date: date the document was executed (e.g. "8/8/2011")
-- recorded_date: date the document was recorded (e.g. "8/23/2011")
-- grantor: the grantor(s) named in the instrument
-- grantee: the grantee(s) named in the instrument
-- description: brief description of the property or interest conveyed
-- comments: any prior deed references, book/page references, or other notable details
-- confidence: your confidence in the extraction - "high", "medium", or "low"
-- notes_for_reviewer: any concerns or ambiguities the reviewer should check
+- vol_page: volume and page reference (e.g. "DB 1094/697" or "BOOK 338 PAGE 317")
+- instrument_type: type of instrument (e.g. "Oil and Gas Lease", "Deed", "Assignment")
+- doc_date: date the document was executed, or empty string if not found
+- recorded_date: date recorded, or empty string if not found  
+- grantor: the grantor(s) - the party conveying rights
+- grantee: the grantee(s) - the party receiving rights
+- description: brief description of property or interest conveyed
+- comments: any other notable details, prior references, consideration amount
+- confidence: "high", "medium", or "low"
+- notes_for_reviewer: any concerns or ambiguities
 
+If you find at least one instrument, return it even if some fields are empty strings.
 Return ONLY a valid JSON array, no other text.
 
 OCR TEXT:
