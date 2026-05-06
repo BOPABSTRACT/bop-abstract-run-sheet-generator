@@ -1,3 +1,4 @@
+// REST-based Document AI client - v2
 export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
   const projectNumber = process.env.GOOGLE_CLOUD_PROJECT_NUMBER;
   const location = process.env.GOOGLE_DOCAI_LOCATION || 'us';
@@ -5,12 +6,10 @@ export async function ocrPdf(pdfBuffer: Buffer): Promise<string> {
   const keyB64 = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64;
 
   if (!projectNumber || !processorId || !keyB64) {
-    throw new Error('Missing required environment variables');
+    throw new Error(`Missing env vars: projectNumber=${projectNumber} processorId=${processorId} hasKey=${!!keyB64}`);
   }
 
-  // Get access token using service account credentials
   const keyJson = JSON.parse(Buffer.from(keyB64, 'base64').toString('utf-8'));
-  
   const token = await getAccessToken(keyJson);
 
   const url = `https://${location}-documentai.googleapis.com/v1/projects/${projectNumber}/locations/${location}/processors/${processorId}:process`;
