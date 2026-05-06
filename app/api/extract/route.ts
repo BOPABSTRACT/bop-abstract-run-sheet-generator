@@ -37,22 +37,13 @@ export async function POST(req: NextRequest) {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-       const ocrText = await ocrPdf(buffer);
-console.log('OCR TEXT SAMPLE:', ocrText.substring(0, 500));
+        const ocrText = await ocrPdf(buffer);
 
         if (!ocrText || ocrText.trim().length < 20) {
           errors.push({ file: fileName, error: 'OCR returned no usable text' });
           continue;
         }
 
-       if (allRows.length === 0 && errors.length === 0) {
-          // Debug: return OCR text so we can see what was extracted
-          return NextResponse.json({ 
-            rows: [], 
-            errors: [{ file: fileName, error: `OCR SAMPLE: ${ocrText.substring(0, 300)}` }], 
-            processed: files.length 
-          });
-        }
         const instruments = await extractInstruments(ocrText, fileName);
         for (const inst of instruments) {
           allRows.push({ ...inst, source_file: fileName });
