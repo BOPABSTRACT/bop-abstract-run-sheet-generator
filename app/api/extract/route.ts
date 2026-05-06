@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const ocrText = await ocrPdf(buffer);
+       const ocrText = await ocrPdf(buffer);
+console.log('OCR TEXT SAMPLE:', ocrText.substring(0, 500));
 
         if (!ocrText || ocrText.trim().length < 20) {
           errors.push({ file: fileName, error: 'OCR returned no usable text' });
