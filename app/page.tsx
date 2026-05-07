@@ -27,7 +27,6 @@ function parseDate(dateStr: string): Date {
   const cleaned = dateStr.trim();
   const d = new Date(cleaned);
   if (!isNaN(d.getTime())) return d;
-  // Try MM/DD/YYYY
   const parts = cleaned.split('/');
   if (parts.length === 3) {
     return new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
@@ -150,7 +149,6 @@ export default function Home() {
         })
       );
 
-      // Sort chronologically by recorded date
       allRows.sort((a, b) => parseDate(a.recorded_date).getTime() - parseDate(b.recorded_date).getTime());
 
       setRows(allRows);
@@ -160,7 +158,7 @@ export default function Home() {
       const errCount = allErrors.length;
 
       if (okCount > 0 && errCount === 0) {
-        showStatus(`Extracted ${okCount} instrument(s). Review and edit below.`, 'success');
+        showStatus(`Extracted ${okCount} instrument(s) from ${total} file(s). Review and edit below.`, 'success');
       } else if (okCount > 0 && errCount > 0) {
         showStatus(`Extracted ${okCount} instrument(s). ${errCount} file(s) had errors.`, 'info');
       } else {
@@ -192,7 +190,6 @@ export default function Home() {
       return;
     }
 
-    // Sort chronologically before export
     const sorted = [...rows].sort(
       (a, b) => parseDate(a.recorded_date).getTime() - parseDate(b.recorded_date).getTime()
     );
@@ -200,17 +197,11 @@ export default function Home() {
     const today = new Date().toLocaleDateString('en-US');
     const descriptionCell = `Description: ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
 
-    // Build worksheet data
     const wsData: any[][] = [
-      // Row 1: Title
       [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`, '', '', '', '', '', ''],
-      // Row 2: Abstractor / Due Date
       ['Abstractor Name:', abstractorName, '', '', '', 'Due Date:', today],
-      // Row 3: Description
       [descriptionCell, '', '', '', '', '', ''],
-      // Row 4: Headers
       ['VOL/PAGE', 'Instrument Type', 'Doc. Date\nRecorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
-      // Data rows
       ...sorted.map((r) => [
         r.vol_page,
         r.instrument_type,
@@ -224,42 +215,30 @@ export default function Home() {
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // ── Column widths (match template exactly) ────────────────────────────
     ws['!cols'] = [
-      { wch: 12 },   // A VOL/PAGE
-      { wch: 18 },   // B Instrument Type
-      { wch: 14 },   // C Dates
-      { wch: 20.7 }, // D Grantor
-      { wch: 20.7 }, // E Grantee
-      { wch: 27 },   // F Description
-      { wch: 36 },   // G Comments
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 20.7 },
+      { wch: 20.7 },
+      { wch: 27 },
+      { wch: 36 },
     ];
 
-    // ── Row heights ───────────────────────────────────────────────────────
     ws['!rows'] = [
-      { hpt: 33 },   // Row 1 title
-      { hpt: 77 },   // Row 2 abstractor
-      { hpt: 52 },   // Row 3 description
-      { hpt: 57 },   // Row 4 headers
-      ...sorted.map(() => ({ hpt: 100 })), // Data rows
+      { hpt: 33 },
+      { hpt: 77 },
+      { hpt: 52 },
+      { hpt: 57 },
+      ...sorted.map(() => ({ hpt: 100 })),
     ];
 
-    // ── Merges (match template) ───────────────────────────────────────────
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // A1:G1 title
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, // A2:B2 abstractor label+name
-      { s: { r: 1, c: 2 }, e: { r: 1, c: 4 } }, // C2:E2 (blank middle)
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } }, // A3:G3 description
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
+      { s: { r: 1, c: 2 }, e: { r: 1, c: 4 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } },
     ];
-
-    // ── Cell styles via XLSX write options ────────────────────────────────
-    // XLSX community edition doesn't support rich styling natively,
-    // but we encode styles via the cell's 's' property for xlsx-style-based forks.
-    // Since we're using the SheetJS community build (no style support),
-    // we encode what we can and note the limitations.
-
-    // Mark cells with wrap text via '!sheetFormat'
-    ws['!sheetFormat'] = { defaultRowHeight: 100 };
 
     const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}.xlsx`;
@@ -343,7 +322,16 @@ export default function Home() {
 
       {rows.length > 0 && (
         <>
-          <h2>Review &amp; Edit Extracted Instruments</h2>
+          <h2>
+            Review &amp; Edit Extracted Instruments
+            <span style={{ fontSize: '0.85rem', fontWeight: 'normal', marginLeft: '1rem', color: '#555' }}>
+              {rows.length} instrument(s) from {new Set(rows.map(r => r.source_file)).size} file(s)
+              &nbsp;·&nbsp;
+              <span style={{ color: '#2d6a2d' }}>■ High</span>&nbsp;
+              <span style={{ color: '#8a6d00' }}>■ Medium</span>&nbsp;
+              <span style={{ color: '#8a0000' }}>■ Low — review needed</span>
+            </span>
+          </h2>
           <div style={{ overflowX: 'auto' }}>
             <table className="results-table">
               <thead>
@@ -357,6 +345,7 @@ export default function Home() {
                   <th>Grantee</th>
                   <th>Description</th>
                   <th>Comments</th>
+                  <th>⚠ Notes for Reviewer</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -372,6 +361,14 @@ export default function Home() {
                     <td><input value={row.grantee} onChange={(e) => updateRow(i, 'grantee', e.target.value)} /></td>
                     <td><input value={row.description} onChange={(e) => updateRow(i, 'description', e.target.value)} /></td>
                     <td><input value={row.comments} onChange={(e) => updateRow(i, 'comments', e.target.value)} /></td>
+                    <td>
+                      <input
+                        value={row.notes_for_reviewer}
+                        onChange={(e) => updateRow(i, 'notes_for_reviewer', e.target.value)}
+                        style={{ fontStyle: row.notes_for_reviewer ? 'italic' : 'normal', color: row.notes_for_reviewer ? '#8a0000' : 'inherit' }}
+                        placeholder="—"
+                      />
+                    </td>
                     <td><button onClick={() => deleteRow(i)}>Delete</button></td>
                   </tr>
                 ))}
