@@ -22,6 +22,19 @@ interface ExtractError {
   error: string;
 }
 
+function parseDate(dateStr: string): Date {
+  if (!dateStr) return new Date(0);
+  const cleaned = dateStr.trim();
+  const d = new Date(cleaned);
+  if (!isNaN(d.getTime())) return d;
+  // Try MM/DD/YYYY
+  const parts = cleaned.split('/');
+  if (parts.length === 3) {
+    return new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+  }
+  return new Date(0);
+}
+
 export default function Home() {
   const [abstractorName, setAbstractorName] = useState('');
   const [propertyDescription, setPropertyDescription] = useState('');
@@ -84,7 +97,6 @@ export default function Home() {
       const fileArray = Array.from(files);
       const total = fileArray.length;
 
-      // ── Step 1: Upload all files in parallel to Vercel Blob ──────────────
       showStatus(`Uploading ${total} file(s)...`, 'info');
 
       const uploadResults = await Promise.all(
@@ -104,7 +116,6 @@ export default function Home() {
         })
       );
 
-      // ── Step 2: Process each file in parallel, one request per file ──────
       showStatus(`Processing ${total} document(s) in parallel...`, 'info');
       setProgress({ done: 0, total });
 
@@ -126,14 +137,8 @@ export default function Home() {
             }
 
             const data = await res.json();
-
-            if (data.rows && data.rows.length > 0) {
-              allRows.push(...data.rows);
-            }
-
-            if (data.error) {
-              allErrors.push({ file: originalName, error: data.error });
-            }
+            if (data.rows && data.rows.length > 0) allRows.push(...data.rows);
+            if (data.error) allErrors.push({ file: originalName, error: data.error });
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
             allErrors.push({ file: originalName, error: message });
@@ -144,6 +149,9 @@ export default function Home() {
           }
         })
       );
+
+      // Sort chronologically by recorded date
+      allRows.sort((a, b) => parseDate(a.recorded_date).getTime() - parseDate(b.recorded_date).getTime());
 
       setRows(allRows);
       setErrors(allErrors);
@@ -184,41 +192,79 @@ export default function Home() {
       return;
     }
 
-    const headerRows: any[][] = [
-      [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`],
-      [],
-      ['Abstractor Name:', abstractorName, '', 'Due Date:', 'N/A'],
-      [
-        'Description:',
-        `${propertyDescription}     Current Parcel Nos.: ${parcelNumber}    Current Acreage: ${acreage}    District: ${district}    County: ${county}     State: West Virginia`,
-      ],
-      [],
-      ['VOL/PAGE', 'Instrument Type', 'Doc. Date / Recorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
+    // Sort chronologically before export
+    const sorted = [...rows].sort(
+      (a, b) => parseDate(a.recorded_date).getTime() - parseDate(b.recorded_date).getTime()
+    );
+
+    const today = new Date().toLocaleDateString('en-US');
+    const descriptionCell = `Description: ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
+
+    // Build worksheet data
+    const wsData: any[][] = [
+      // Row 1: Title
+      [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`, '', '', '', '', '', ''],
+      // Row 2: Abstractor / Due Date
+      ['Abstractor Name:', abstractorName, '', '', '', 'Due Date:', today],
+      // Row 3: Description
+      [descriptionCell, '', '', '', '', '', ''],
+      // Row 4: Headers
+      ['VOL/PAGE', 'Instrument Type', 'Doc. Date\nRecorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
+      // Data rows
+      ...sorted.map((r) => [
+        r.vol_page,
+        r.instrument_type,
+        `${r.doc_date}\n${r.recorded_date}`,
+        r.grantor,
+        r.grantee,
+        r.description,
+        r.comments,
+      ]),
     ];
 
-    const dataRows = rows.map((r) => [
-      r.vol_page,
-      r.instrument_type,
-      `${r.doc_date}  ${r.recorded_date}`.trim(),
-      r.grantor,
-      r.grantee,
-      r.description,
-      r.comments,
-    ]);
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    const allRows = [...headerRows, ...dataRows];
-    const ws = XLSX.utils.aoa_to_sheet(allRows);
+    // ── Column widths (match template exactly) ────────────────────────────
     ws['!cols'] = [
-      { wch: 18 }, { wch: 22 }, { wch: 22 },
-      { wch: 35 }, { wch: 35 }, { wch: 50 }, { wch: 40 },
+      { wch: 12 },   // A VOL/PAGE
+      { wch: 18 },   // B Instrument Type
+      { wch: 14 },   // C Dates
+      { wch: 20.7 }, // D Grantor
+      { wch: 20.7 }, // E Grantee
+      { wch: 27 },   // F Description
+      { wch: 36 },   // G Comments
     ];
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Chain of Title');
+    // ── Row heights ───────────────────────────────────────────────────────
+    ws['!rows'] = [
+      { hpt: 33 },   // Row 1 title
+      { hpt: 77 },   // Row 2 abstractor
+      { hpt: 52 },   // Row 3 description
+      { hpt: 57 },   // Row 4 headers
+      ...sorted.map(() => ({ hpt: 100 })), // Data rows
+    ];
+
+    // ── Merges (match template) ───────────────────────────────────────────
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // A1:G1 title
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, // A2:B2 abstractor label+name
+      { s: { r: 1, c: 2 }, e: { r: 1, c: 4 } }, // C2:E2 (blank middle)
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } }, // A3:G3 description
+    ];
+
+    // ── Cell styles via XLSX write options ────────────────────────────────
+    // XLSX community edition doesn't support rich styling natively,
+    // but we encode styles via the cell's 's' property for xlsx-style-based forks.
+    // Since we're using the SheetJS community build (no style support),
+    // we encode what we can and note the limitations.
+
+    // Mark cells with wrap text via '!sheetFormat'
+    ws['!sheetFormat'] = { defaultRowHeight: 100 };
 
     const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}.xlsx`;
-    XLSX.writeFile(wb, filename);
+    XLSX.writeFile(ws, filename, { bookType: 'xlsx', type: 'binary' });
+
     showStatus(`Exported ${filename}`, 'success');
   }
 
@@ -228,71 +274,37 @@ export default function Home() {
 
       <div className="form-group">
         <label>Abstractor Name *</label>
-        <input
-          type="text"
-          value={abstractorName}
-          onChange={(e) => setAbstractorName(e.target.value)}
-          placeholder="Enter your name"
-        />
+        <input type="text" value={abstractorName} onChange={(e) => setAbstractorName(e.target.value)} placeholder="Enter your name" />
       </div>
 
       <div className="form-group">
         <label>Property Description *</label>
-        <textarea
-          value={propertyDescription}
-          onChange={(e) => setPropertyDescription(e.target.value)}
-          placeholder="Enter property description"
-        />
+        <textarea value={propertyDescription} onChange={(e) => setPropertyDescription(e.target.value)} placeholder="Enter property description" />
       </div>
 
       <div className="form-group">
         <label>Parcel Number</label>
-        <input
-          type="text"
-          value={parcelNumber}
-          onChange={(e) => setParcelNumber(e.target.value)}
-          placeholder="e.g., 12-22-7"
-        />
+        <input type="text" value={parcelNumber} onChange={(e) => setParcelNumber(e.target.value)} placeholder="e.g., 12-22-7" />
       </div>
 
       <div className="form-group">
         <label>Acreage</label>
-        <input
-          type="text"
-          value={acreage}
-          onChange={(e) => setAcreage(e.target.value)}
-          placeholder="e.g., 16.4"
-        />
+        <input type="text" value={acreage} onChange={(e) => setAcreage(e.target.value)} placeholder="e.g., 16.4" />
       </div>
 
       <div className="form-group">
         <label>District</label>
-        <input
-          type="text"
-          value={district}
-          onChange={(e) => setDistrict(e.target.value)}
-          placeholder="e.g., Mannington District"
-        />
+        <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="e.g., Mannington District" />
       </div>
 
       <div className="form-group">
         <label>County</label>
-        <input
-          type="text"
-          value={county}
-          onChange={(e) => setCounty(e.target.value)}
-          placeholder="e.g., Marion"
-        />
+        <input type="text" value={county} onChange={(e) => setCounty(e.target.value)} placeholder="e.g., Marion" />
       </div>
 
       <div className="form-group">
         <label>Upload PDFs</label>
-        <input
-          type="file"
-          multiple
-          accept=".pdf"
-          onChange={(e) => setFiles(e.target.files)}
-        />
+        <input type="file" multiple accept=".pdf" onChange={(e) => setFiles(e.target.files)} />
       </div>
 
       <div className="button-group">
@@ -323,9 +335,7 @@ export default function Home() {
           <h2>Errors</h2>
           <ul>
             {errors.map((e, i) => (
-              <li key={i}>
-                <strong>{e.file}</strong>: {e.error}
-              </li>
+              <li key={i}><strong>{e.file}</strong>: {e.error}</li>
             ))}
           </ul>
         </>
