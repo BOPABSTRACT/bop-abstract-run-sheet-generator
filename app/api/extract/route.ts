@@ -9,44 +9,29 @@ interface ExtractedRow extends ExtractedInstrument {
   source_file: string;
 }
 
-// Expects JSON body: { files: [{ url: string, filename: string }] }
+// Accepts a SINGLE file: { url: string, filename: string }
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const files: { url: string; filename: string }[] = body.files ?? [];
+    const { url, filename } = body;
 
-    if (files.length === 0) {
-      return NextResponse.json({ error: 'No files provided' }, { status: 400 });
+    if (!url || !filename) {
+      return NextResponse.json({ error: 'Missing url or filename' }, { status: 400 });
     }
 
-    const allRows: ExtractedRow[] = [];
-    const errors: { file: string; error: string }[] = [];
+    const ocrText = await ocrPdfFromUrl(url);
 
-    for (const { url, filename } of files) {
-      if (!url || !filename) {
-        errors.push({ file: filename ?? 'unknown', error: 'Missing url or filename' });
-        continue;
-      }
-
-      try {
-        const ocrText = await ocrPdfFromUrl(url);
-
-        if (!ocrText || ocrText.trim().length < 20) {
-          errors.push({ file: filename, error: 'OCR returned no usable text' });
-          continue;
-        }
-
-        const instruments = await extractInstruments(ocrText, filename);
-        for (const inst of instruments) {
-          allRows.push({ ...inst, source_file: filename });
-        }
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : JSON.stringify(err);
-        errors.push({ file: filename, error: message });
-      }
+    if (!ocrText || ocrText.trim().length < 20) {
+      return NextResponse.json({ error: 'OCR returned no usable text' }, { status: 422 });
     }
 
-    return NextResponse.json({ rows: allRows, errors, processed: files.length });
+    const instruments = await extractInstruments(ocrText, filename);
+    const rows: ExtractedRow[] = instruments.map((inst) => ({
+      ...inst,
+      source_file: filename,
+    }));
+
+    return NextResponse.json({ rows });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : JSON.stringify(err);
     console.error('Extract route error:', message);
