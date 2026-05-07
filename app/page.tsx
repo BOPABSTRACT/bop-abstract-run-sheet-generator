@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
+import { upload } from '@vercel/blob/client';
 
 interface InstrumentRow {
   vol_page: string;
@@ -73,25 +74,71 @@ export default function Home() {
       showStatus('Please upload at least one PDF file', 'error');
       return;
     }
+
     setIsProcessing(true);
     setRows([]);
     setErrors([]);
-    showStatus(`Processing ${files.length} document(s)... This typically takes 10-30 seconds per file.`, 'info');
+
     try {
-      const formData = new FormData();
-      for (let i = 0; i < files.length; i++) {
-        formData.append('files', files[i]);
+      const fileArray = Array.from(files);
+
+      // ── Step 1: Upload each PDF directly to Vercel Blob ──────────────────
+      showStatus(`Uploading ${fileArray.length} file(s)...`, 'info');
+
+      const uploadedFiles: { url: string; filename: string }[] = [];
+      const uploadErrors: ExtractError[] = [];
+
+      await Promise.all(
+        fileArray.map(async (file) => {
+          try {
+            const blob = await upload(file.name, file, {
+              access: 'public',
+              handleUploadUrl: '/api/upload-url',
+            });
+            uploadedFiles.push({ url: blob.url, filename: file.name });
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            uploadErrors.push({ file: file.name, error: message });
+          }
+        })
+      );
+
+      if (uploadErrors.length > 0) {
+        setErrors(uploadErrors);
       }
-      const res = await fetch('/api/extract', { method: 'POST', body: formData });
+
+      if (uploadedFiles.length === 0) {
+        showStatus('All uploads failed. Check errors below.', 'error');
+        return;
+      }
+
+      // ── Step 2: Send blob URLs to /api/extract for OCR + Claude ──────────
+      showStatus(
+        `Processing ${uploadedFiles.length} document(s)... This typically takes 10–30 seconds per file.`,
+        'info'
+      );
+
+      const res = await fetch('/api/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: uploadedFiles }),
+      });
+
       if (!res.ok) {
         const errText = await res.text();
         throw new Error(`Server error (${res.status}): ${errText}`);
       }
+
       const data = await res.json();
+
       if (data.rows && data.rows.length > 0) setRows(data.rows);
-      if (data.errors && data.errors.length > 0) setErrors(data.errors);
+
+      const allErrors = [...uploadErrors, ...(data.errors ?? [])];
+      if (allErrors.length > 0) setErrors(allErrors);
+
       const okCount = (data.rows ?? []).length;
-      const errCount = (data.errors ?? []).length;
+      const errCount = allErrors.length;
+
       if (okCount > 0 && errCount === 0) {
         showStatus(`Extracted ${okCount} instrument(s). Review and edit below.`, 'success');
       } else if (okCount > 0 && errCount > 0) {
@@ -99,8 +146,8 @@ export default function Home() {
       } else {
         showStatus(`No instruments extracted. ${errCount} error(s).`, 'error');
       }
-    } catch (err: any) {
-      showStatus(`Failed: ${err.message ?? String(err)}`, 'error');
+    } catch (err: unknown) {
+      showStatus(`Failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -123,14 +170,19 @@ export default function Home() {
       showStatus('No data to export', 'error');
       return;
     }
+
     const headerRows: any[][] = [
       [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`],
       [],
       ['Abstractor Name:', abstractorName, '', 'Due Date:', 'N/A'],
-      ['Description:', `${propertyDescription}     Current Parcel Nos.: ${parcelNumber}    Current Acreage: ${acreage}    District: ${district}    County: ${county}     State: West Virginia`],
+      [
+        'Description:',
+        `${propertyDescription}     Current Parcel Nos.: ${parcelNumber}    Current Acreage: ${acreage}    District: ${district}    County: ${county}     State: West Virginia`,
+      ],
       [],
       ['VOL/PAGE', 'Instrument Type', 'Doc. Date / Recorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
     ];
+
     const dataRows = rows.map((r) => [
       r.vol_page,
       r.instrument_type,
@@ -140,11 +192,17 @@ export default function Home() {
       r.description,
       r.comments,
     ]);
+
     const allRows = [...headerRows, ...dataRows];
     const ws = XLSX.utils.aoa_to_sheet(allRows);
-    ws['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 35 }, { wch: 35 }, { wch: 50 }, { wch: 40 }];
+    ws['!cols'] = [
+      { wch: 18 }, { wch: 22 }, { wch: 22 },
+      { wch: 35 }, { wch: 35 }, { wch: 50 }, { wch: 40 },
+    ];
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Chain of Title');
+
     const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}.xlsx`;
     XLSX.writeFile(wb, filename);
@@ -191,7 +249,9 @@ export default function Home() {
       </div>
 
       <div className="button-group">
-        <button className="btn-demo" onClick={generateDemo} disabled={isProcessing}>Generate Demo Sample</button>
+        <button className="btn-demo" onClick={generateDemo} disabled={isProcessing}>
+          Generate Demo Sample
+        </button>
         <button className="btn-real" onClick={generateWithAPI} disabled={isProcessing}>
           {isProcessing ? 'Processing...' : 'Generate with Real Data'}
         </button>
@@ -204,7 +264,9 @@ export default function Home() {
           <h2>Errors</h2>
           <ul>
             {errors.map((e, i) => (
-              <li key={i}><strong>{e.file}</strong>: {e.error}</li>
+              <li key={i}>
+                <strong>{e.file}</strong>: {e.error}
+              </li>
             ))}
           </ul>
         </>
@@ -247,7 +309,9 @@ export default function Home() {
               </tbody>
             </table>
           </div>
-          <button className="btn-export" onClick={exportToExcel}>Export to Excel</button>
+          <button className="btn-export" onClick={exportToExcel}>
+            Export to Excel
+          </button>
         </>
       )}
     </div>
