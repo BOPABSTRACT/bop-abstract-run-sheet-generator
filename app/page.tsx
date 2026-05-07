@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { upload } from '@vercel/blob/client';
 
 interface InstrumentRow {
   vol_page: string;
@@ -82,26 +81,34 @@ export default function Home() {
     try {
       const fileArray = Array.from(files);
 
-      // ── Step 1: Upload each PDF directly to Vercel Blob ──────────────────
+      // ── Step 1: Upload each PDF to Vercel Blob via our API route ─────────
       showStatus(`Uploading ${fileArray.length} file(s)...`, 'info');
 
       const uploadedFiles: { url: string; filename: string }[] = [];
       const uploadErrors: ExtractError[] = [];
 
-      await Promise.all(
-        fileArray.map(async (file) => {
-          try {
-            const blob = await upload(file.name, file, {
-              access: 'public',
-              handleUploadUrl: '/api/upload-url',
-            });
-            uploadedFiles.push({ url: blob.url, filename: file.name });
-          } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            uploadErrors.push({ file: file.name, error: message });
+      for (const file of fileArray) {
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+
+          const uploadRes = await fetch('/api/upload-url', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!uploadRes.ok) {
+            const errText = await uploadRes.text();
+            throw new Error(`Upload failed (${uploadRes.status}): ${errText}`);
           }
-        })
-      );
+
+          const { url, filename } = await uploadRes.json();
+          uploadedFiles.push({ url, filename });
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          uploadErrors.push({ file: file.name, error: message });
+        }
+      }
 
       if (uploadErrors.length > 0) {
         setErrors(uploadErrors);
