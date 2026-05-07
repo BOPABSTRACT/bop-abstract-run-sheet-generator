@@ -34,6 +34,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [rows, setRows] = useState<InstrumentRow[]>([]);
   const [errors, setErrors] = useState<ExtractError[]>([]);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   function showStatus(message: string, type: 'success' | 'error' | 'info') {
     setStatus({ message, type });
@@ -77,73 +78,77 @@ export default function Home() {
     setIsProcessing(true);
     setRows([]);
     setErrors([]);
+    setProgress(null);
 
     try {
       const fileArray = Array.from(files);
+      const total = fileArray.length;
 
-      // ── Step 1: Upload each PDF to Vercel Blob via our API route ─────────
-      showStatus(`Uploading ${fileArray.length} file(s)...`, 'info');
+      // ── Step 1: Upload all files in parallel to Vercel Blob ──────────────
+      showStatus(`Uploading ${total} file(s)...`, 'info');
 
-      const uploadedFiles: { url: string; filename: string }[] = [];
-      const uploadErrors: ExtractError[] = [];
-
-      for (const file of fileArray) {
-        try {
+      const uploadResults = await Promise.all(
+        fileArray.map(async (file) => {
           const formData = new FormData();
           formData.append('file', file);
-
           const uploadRes = await fetch('/api/upload-url', {
             method: 'POST',
             body: formData,
           });
-
           if (!uploadRes.ok) {
             const errText = await uploadRes.text();
-            throw new Error(`Upload failed (${uploadRes.status}): ${errText}`);
+            throw new Error(`Upload failed for ${file.name} (${uploadRes.status}): ${errText}`);
           }
-
           const { url, filename } = await uploadRes.json();
-          uploadedFiles.push({ url, filename });
-        } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : String(err);
-          uploadErrors.push({ file: file.name, error: message });
-        }
-      }
-
-      if (uploadErrors.length > 0) {
-        setErrors(uploadErrors);
-      }
-
-      if (uploadedFiles.length === 0) {
-        showStatus('All uploads failed. Check errors below.', 'error');
-        return;
-      }
-
-      // ── Step 2: Send blob URLs to /api/extract for OCR + Claude ──────────
-      showStatus(
-        `Processing ${uploadedFiles.length} document(s)... This typically takes 10–30 seconds per file.`,
-        'info'
+          return { url, filename: filename ?? file.name, originalName: file.name };
+        })
       );
 
-      const res = await fetch('/api/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: uploadedFiles }),
-      });
+      // ── Step 2: Process each file in parallel, one request per file ──────
+      showStatus(`Processing ${total} document(s) in parallel...`, 'info');
+      setProgress({ done: 0, total });
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Server error (${res.status}): ${errText}`);
-      }
+      const allRows: InstrumentRow[] = [];
+      const allErrors: ExtractError[] = [];
 
-      const data = await res.json();
+      await Promise.all(
+        uploadResults.map(async ({ url, filename, originalName }) => {
+          try {
+            const res = await fetch('/api/extract', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url, filename }),
+            });
 
-      if (data.rows && data.rows.length > 0) setRows(data.rows);
+            if (!res.ok) {
+              const errText = await res.text();
+              throw new Error(`Server error (${res.status}): ${errText}`);
+            }
 
-      const allErrors = [...uploadErrors, ...(data.errors ?? [])];
-      if (allErrors.length > 0) setErrors(allErrors);
+            const data = await res.json();
 
-      const okCount = (data.rows ?? []).length;
+            if (data.rows && data.rows.length > 0) {
+              allRows.push(...data.rows);
+            }
+
+            if (data.error) {
+              allErrors.push({ file: originalName, error: data.error });
+            }
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            allErrors.push({ file: originalName, error: message });
+          } finally {
+            setProgress((prev) =>
+              prev ? { done: prev.done + 1, total: prev.total } : null
+            );
+          }
+        })
+      );
+
+      setRows(allRows);
+      setErrors(allErrors);
+
+      const okCount = allRows.length;
       const errCount = allErrors.length;
 
       if (okCount > 0 && errCount === 0) {
@@ -157,6 +162,7 @@ export default function Home() {
       showStatus(`Failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
     } finally {
       setIsProcessing(false);
+      setProgress(null);
     }
   }
 
@@ -222,37 +228,71 @@ export default function Home() {
 
       <div className="form-group">
         <label>Abstractor Name *</label>
-        <input type="text" value={abstractorName} onChange={(e) => setAbstractorName(e.target.value)} placeholder="Enter your name" />
+        <input
+          type="text"
+          value={abstractorName}
+          onChange={(e) => setAbstractorName(e.target.value)}
+          placeholder="Enter your name"
+        />
       </div>
 
       <div className="form-group">
         <label>Property Description *</label>
-        <textarea value={propertyDescription} onChange={(e) => setPropertyDescription(e.target.value)} placeholder="Enter property description" />
+        <textarea
+          value={propertyDescription}
+          onChange={(e) => setPropertyDescription(e.target.value)}
+          placeholder="Enter property description"
+        />
       </div>
 
       <div className="form-group">
         <label>Parcel Number</label>
-        <input type="text" value={parcelNumber} onChange={(e) => setParcelNumber(e.target.value)} placeholder="e.g., 12-22-7" />
+        <input
+          type="text"
+          value={parcelNumber}
+          onChange={(e) => setParcelNumber(e.target.value)}
+          placeholder="e.g., 12-22-7"
+        />
       </div>
 
       <div className="form-group">
         <label>Acreage</label>
-        <input type="text" value={acreage} onChange={(e) => setAcreage(e.target.value)} placeholder="e.g., 16.4" />
+        <input
+          type="text"
+          value={acreage}
+          onChange={(e) => setAcreage(e.target.value)}
+          placeholder="e.g., 16.4"
+        />
       </div>
 
       <div className="form-group">
         <label>District</label>
-        <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="e.g., Mannington District" />
+        <input
+          type="text"
+          value={district}
+          onChange={(e) => setDistrict(e.target.value)}
+          placeholder="e.g., Mannington District"
+        />
       </div>
 
       <div className="form-group">
         <label>County</label>
-        <input type="text" value={county} onChange={(e) => setCounty(e.target.value)} placeholder="e.g., Marion" />
+        <input
+          type="text"
+          value={county}
+          onChange={(e) => setCounty(e.target.value)}
+          placeholder="e.g., Marion"
+        />
       </div>
 
       <div className="form-group">
         <label>Upload PDFs</label>
-        <input type="file" multiple accept=".pdf" onChange={(e) => setFiles(e.target.files)} />
+        <input
+          type="file"
+          multiple
+          accept=".pdf"
+          onChange={(e) => setFiles(e.target.files)}
+        />
       </div>
 
       <div className="button-group">
@@ -263,6 +303,18 @@ export default function Home() {
           {isProcessing ? 'Processing...' : 'Generate with Real Data'}
         </button>
       </div>
+
+      {progress && (
+        <div className="progress-bar-container">
+          <div
+            className="progress-bar"
+            style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
+          />
+          <span className="progress-label">
+            {progress.done} of {progress.total} files done
+          </span>
+        </div>
+      )}
 
       {status && <div className={`status ${status.type}`}>{status.message}</div>}
 
