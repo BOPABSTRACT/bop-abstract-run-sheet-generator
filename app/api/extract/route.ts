@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ocrPdf } from '@/lib/docai';
+import { ocrPdfFromUrl } from '@/lib/docai';
 import { extractInstruments, type ExtractedInstrument } from '@/lib/claude';
 
 export const runtime = 'nodejs';
@@ -9,48 +9,40 @@ interface ExtractedRow extends ExtractedInstrument {
   source_file: string;
 }
 
+// Expects JSON body: { files: [{ url: string, filename: string }] }
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const files = formData.getAll('files');
+    const body = await req.json();
+    const files: { url: string; filename: string }[] = body.files ?? [];
 
     if (files.length === 0) {
-      return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
+      return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
     const allRows: ExtractedRow[] = [];
     const errors: { file: string; error: string }[] = [];
 
-    for (const file of files) {
-      if (!(file instanceof File)) {
-        errors.push({ file: 'unknown', error: 'Not a valid file object' });
-        continue;
-      }
-
-      const fileName = file.name || 'unnamed.pdf';
-
-      if (!fileName.toLowerCase().endsWith('.pdf')) {
-        errors.push({ file: fileName, error: 'Not a PDF file' });
+    for (const { url, filename } of files) {
+      if (!url || !filename) {
+        errors.push({ file: filename ?? 'unknown', error: 'Missing url or filename' });
         continue;
       }
 
       try {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const ocrText = await ocrPdf(buffer);
+        const ocrText = await ocrPdfFromUrl(url);
 
         if (!ocrText || ocrText.trim().length < 20) {
-          errors.push({ file: fileName, error: 'OCR returned no usable text' });
+          errors.push({ file: filename, error: 'OCR returned no usable text' });
           continue;
         }
 
-        const instruments = await extractInstruments(ocrText, fileName);
+        const instruments = await extractInstruments(ocrText, filename);
         for (const inst of instruments) {
-          allRows.push({ ...inst, source_file: fileName });
+          allRows.push({ ...inst, source_file: filename });
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : JSON.stringify(err);
-        errors.push({ file: fileName, error: message });
+        errors.push({ file: filename, error: message });
       }
     }
 
