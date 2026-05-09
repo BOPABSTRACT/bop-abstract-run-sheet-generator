@@ -244,9 +244,12 @@ export default function Home() {
       { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } },
     ];
 
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Chain of Title');
+
     const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
     const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}_sortedBy${sortField === 'recorded_date' ? 'RecordedDate' : 'DocDate'}.xlsx`;
-    XLSX.writeFile(ws, filename, { bookType: 'xlsx', type: 'binary' });
+    XLSX.writeFile(wb, filename);
 
     showStatus(`Exported ${filename} (sorted by ${sortLabel})`, 'success');
   }
@@ -339,7 +342,6 @@ export default function Home() {
             </span>
           </h2>
 
-          {/* Table sort control */}
           <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ fontWeight: 600 }}>Sort table by:</span>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
@@ -408,7 +410,6 @@ export default function Home() {
             </table>
           </div>
 
-          {/* Export sort control */}
           <div style={{ marginTop: '1.5rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ fontWeight: 600 }}>Export sorted by:</span>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
