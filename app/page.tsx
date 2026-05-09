@@ -34,6 +34,17 @@ function parseDate(dateStr: string): Date {
   return new Date(0);
 }
 
+function formatDate(dateStr: string): string {
+  if (!dateStr || dateStr.trim() === '') return '';
+  const d = parseDate(dateStr);
+  if (!d || d.getTime() === new Date(0).getTime()) return dateStr; // return original if unparseable
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  if (yyyy < 1600 || yyyy > 2100) return dateStr; // sanity check, return original if weird year
+  return `${mm}-${dd}-${yyyy}`;
+}
+
 export default function Home() {
   const [abstractorName, setAbstractorName] = useState('');
   const [propertyDescription, setPropertyDescription] = useState('');
@@ -69,8 +80,8 @@ export default function Home() {
       {
         vol_page: 'DB 1094/697',
         instrument_type: 'General Warranty Deed',
-        doc_date: '8/8/2011',
-        recorded_date: '8/23/2011',
+        doc_date: '08-08-2011',
+        recorded_date: '08-23-2011',
         grantor: 'George R. Freeland, widower',
         grantee: 'Kevin D. Moore or Kelley Moore, his wife, as joint tenants with the right of survivorship and not as tenants in common',
         description: 'All that certain tract or parcel of real estate, situate on Pyles Fork of Buffalo Creek, in Mannington District, Marion County, West Virginia, containing 16.4 acres, more or less',
@@ -144,7 +155,16 @@ export default function Home() {
             }
 
             const data = await res.json();
-            if (data.rows && data.rows.length > 0) allRows.push(...data.rows);
+
+            if (data.rows && data.rows.length > 0) {
+              // Normalize dates to MM-DD-YYYY as they come in
+              const normalized = data.rows.map((r: InstrumentRow) => ({
+                ...r,
+                doc_date: formatDate(r.doc_date),
+                recorded_date: formatDate(r.recorded_date),
+              }));
+              allRows.push(...normalized);
+            }
             if (data.error) allErrors.push({ file: originalName, error: data.error });
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
@@ -201,7 +221,6 @@ export default function Home() {
     const today = new Date().toLocaleDateString('en-US');
     const descriptionCell = `Description: ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
 
-    // 8 columns now: VOL/PAGE, Instrument Type, Doc Date, Recorded Date, Grantor, Grantee, Description, Comments
     const wsData: any[][] = [
       [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`, '', '', '', '', '', '', ''],
       ['Abstractor Name:', abstractorName, '', '', '', '', 'Due Date:', today],
@@ -210,8 +229,8 @@ export default function Home() {
       ...sorted.map((r) => [
         r.vol_page,
         r.instrument_type,
-        r.doc_date,
-        r.recorded_date,
+        formatDate(r.doc_date),
+        formatDate(r.recorded_date),
         r.grantor,
         r.grantee,
         r.description,
@@ -241,10 +260,10 @@ export default function Home() {
     ];
 
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // A1:H1 title
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, // A2:B2 abstractor
-      { s: { r: 1, c: 2 }, e: { r: 1, c: 5 } }, // C2:F2 blank middle
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } }, // A3:H3 description
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
+      { s: { r: 1, c: 2 }, e: { r: 1, c: 5 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } },
     ];
 
     const wb = XLSX.utils.book_new();
