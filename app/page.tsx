@@ -201,15 +201,17 @@ export default function Home() {
     const today = new Date().toLocaleDateString('en-US');
     const descriptionCell = `Description: ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
 
+    // 8 columns now: VOL/PAGE, Instrument Type, Doc Date, Recorded Date, Grantor, Grantee, Description, Comments
     const wsData: any[][] = [
-      [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`, '', '', '', '', '', ''],
-      ['Abstractor Name:', abstractorName, '', '', '', 'Due Date:', today],
-      [descriptionCell, '', '', '', '', '', ''],
-      ['VOL/PAGE', 'Instrument Type', `Doc. Date\nRecorded Date\n(sorted by ${sortLabel})`, 'Grantor', 'Grantee', 'Description', 'Comments'],
+      [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`, '', '', '', '', '', '', ''],
+      ['Abstractor Name:', abstractorName, '', '', '', '', 'Due Date:', today],
+      [descriptionCell, '', '', '', '', '', '', ''],
+      [`VOL/PAGE`, 'Instrument Type', `Doc. Date\n(sorted by ${sortLabel})`, 'Recorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
       ...sorted.map((r) => [
         r.vol_page,
         r.instrument_type,
-        `${r.doc_date}\n${r.recorded_date}`,
+        r.doc_date,
+        r.recorded_date,
         r.grantor,
         r.grantee,
         r.description,
@@ -220,13 +222,14 @@ export default function Home() {
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
     ws['!cols'] = [
-      { wch: 12 },
-      { wch: 18 },
-      { wch: 16 },
-      { wch: 20.7 },
-      { wch: 20.7 },
-      { wch: 27 },
-      { wch: 36 },
+      { wch: 12 },   // A VOL/PAGE
+      { wch: 18 },   // B Instrument Type
+      { wch: 14 },   // C Doc Date
+      { wch: 14 },   // D Recorded Date
+      { wch: 20.7 }, // E Grantor
+      { wch: 20.7 }, // F Grantee
+      { wch: 27 },   // G Description
+      { wch: 36 },   // H Comments
     ];
 
     ws['!rows'] = [
@@ -238,10 +241,10 @@ export default function Home() {
     ];
 
     ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
-      { s: { r: 1, c: 2 }, e: { r: 1, c: 4 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } },
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // A1:H1 title
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, // A2:B2 abstractor
+      { s: { r: 1, c: 2 }, e: { r: 1, c: 5 } }, // C2:F2 blank middle
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } }, // A3:H3 description
     ];
 
     const wb = XLSX.utils.book_new();
