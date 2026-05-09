@@ -47,9 +47,17 @@ export default function Home() {
   const [rows, setRows] = useState<InstrumentRow[]>([]);
   const [errors, setErrors] = useState<ExtractError[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [sortField, setSortField] = useState<'recorded_date' | 'doc_date'>('recorded_date');
+  const [tableSort, setTableSort] = useState<'recorded_date' | 'doc_date'>('recorded_date');
 
   function showStatus(message: string, type: 'success' | 'error' | 'info') {
     setStatus({ message, type });
+  }
+
+  function getSorted(data: InstrumentRow[], field: 'recorded_date' | 'doc_date') {
+    return [...data].sort(
+      (a, b) => parseDate(a[field]).getTime() - parseDate(b[field]).getTime()
+    );
   }
 
   function generateDemo() {
@@ -149,8 +157,6 @@ export default function Home() {
         })
       );
 
-      allRows.sort((a, b) => parseDate(a.recorded_date).getTime() - parseDate(b.recorded_date).getTime());
-
       setRows(allRows);
       setErrors(allErrors);
 
@@ -190,10 +196,8 @@ export default function Home() {
       return;
     }
 
-    const sorted = [...rows].sort(
-      (a, b) => parseDate(a.recorded_date).getTime() - parseDate(b.recorded_date).getTime()
-    );
-
+    const sorted = getSorted(rows, sortField);
+    const sortLabel = sortField === 'recorded_date' ? 'Recorded Date' : 'Doc Date';
     const today = new Date().toLocaleDateString('en-US');
     const descriptionCell = `Description: ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
 
@@ -201,7 +205,7 @@ export default function Home() {
       [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`, '', '', '', '', '', ''],
       ['Abstractor Name:', abstractorName, '', '', '', 'Due Date:', today],
       [descriptionCell, '', '', '', '', '', ''],
-      ['VOL/PAGE', 'Instrument Type', 'Doc. Date\nRecorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
+      ['VOL/PAGE', 'Instrument Type', `Doc. Date\nRecorded Date\n(sorted by ${sortLabel})`, 'Grantor', 'Grantee', 'Description', 'Comments'],
       ...sorted.map((r) => [
         r.vol_page,
         r.instrument_type,
@@ -218,7 +222,7 @@ export default function Home() {
     ws['!cols'] = [
       { wch: 12 },
       { wch: 18 },
-      { wch: 14 },
+      { wch: 16 },
       { wch: 20.7 },
       { wch: 20.7 },
       { wch: 27 },
@@ -241,11 +245,13 @@ export default function Home() {
     ];
 
     const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
-    const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}.xlsx`;
+    const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}_sortedBy${sortField === 'recorded_date' ? 'RecordedDate' : 'DocDate'}.xlsx`;
     XLSX.writeFile(ws, filename, { bookType: 'xlsx', type: 'binary' });
 
-    showStatus(`Exported ${filename}`, 'success');
+    showStatus(`Exported ${filename} (sorted by ${sortLabel})`, 'success');
   }
+
+  const displayedRows = getSorted(rows, tableSort);
 
   return (
     <div className="container">
@@ -332,6 +338,32 @@ export default function Home() {
               <span style={{ color: '#8a0000' }}>■ Low — review needed</span>
             </span>
           </h2>
+
+          {/* Table sort control */}
+          <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontWeight: 600 }}>Sort table by:</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="tableSort"
+                value="recorded_date"
+                checked={tableSort === 'recorded_date'}
+                onChange={() => setTableSort('recorded_date')}
+              />
+              Recorded Date
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="tableSort"
+                value="doc_date"
+                checked={tableSort === 'doc_date'}
+                onChange={() => setTableSort('doc_date')}
+              />
+              Doc Date
+            </label>
+          </div>
+
           <div style={{ overflowX: 'auto' }}>
             <table className="results-table">
               <thead>
@@ -350,31 +382,57 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, i) => (
+                {displayedRows.map((row, i) => (
                   <tr key={i} className={`conf-${row.confidence}`}>
                     <td>{row.source_file}</td>
-                    <td><input value={row.vol_page} onChange={(e) => updateRow(i, 'vol_page', e.target.value)} /></td>
-                    <td><input value={row.instrument_type} onChange={(e) => updateRow(i, 'instrument_type', e.target.value)} /></td>
-                    <td><input value={row.doc_date} onChange={(e) => updateRow(i, 'doc_date', e.target.value)} /></td>
-                    <td><input value={row.recorded_date} onChange={(e) => updateRow(i, 'recorded_date', e.target.value)} /></td>
-                    <td><input value={row.grantor} onChange={(e) => updateRow(i, 'grantor', e.target.value)} /></td>
-                    <td><input value={row.grantee} onChange={(e) => updateRow(i, 'grantee', e.target.value)} /></td>
-                    <td><input value={row.description} onChange={(e) => updateRow(i, 'description', e.target.value)} /></td>
-                    <td><input value={row.comments} onChange={(e) => updateRow(i, 'comments', e.target.value)} /></td>
+                    <td><input value={row.vol_page} onChange={(e) => updateRow(rows.indexOf(row), 'vol_page', e.target.value)} /></td>
+                    <td><input value={row.instrument_type} onChange={(e) => updateRow(rows.indexOf(row), 'instrument_type', e.target.value)} /></td>
+                    <td><input value={row.doc_date} onChange={(e) => updateRow(rows.indexOf(row), 'doc_date', e.target.value)} /></td>
+                    <td><input value={row.recorded_date} onChange={(e) => updateRow(rows.indexOf(row), 'recorded_date', e.target.value)} /></td>
+                    <td><input value={row.grantor} onChange={(e) => updateRow(rows.indexOf(row), 'grantor', e.target.value)} /></td>
+                    <td><input value={row.grantee} onChange={(e) => updateRow(rows.indexOf(row), 'grantee', e.target.value)} /></td>
+                    <td><input value={row.description} onChange={(e) => updateRow(rows.indexOf(row), 'description', e.target.value)} /></td>
+                    <td><input value={row.comments} onChange={(e) => updateRow(rows.indexOf(row), 'comments', e.target.value)} /></td>
                     <td>
                       <input
                         value={row.notes_for_reviewer}
-                        onChange={(e) => updateRow(i, 'notes_for_reviewer', e.target.value)}
+                        onChange={(e) => updateRow(rows.indexOf(row), 'notes_for_reviewer', e.target.value)}
                         style={{ fontStyle: row.notes_for_reviewer ? 'italic' : 'normal', color: row.notes_for_reviewer ? '#8a0000' : 'inherit' }}
                         placeholder="—"
                       />
                     </td>
-                    <td><button onClick={() => deleteRow(i)}>Delete</button></td>
+                    <td><button onClick={() => deleteRow(rows.indexOf(row))}>Delete</button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {/* Export sort control */}
+          <div style={{ marginTop: '1.5rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontWeight: 600 }}>Export sorted by:</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="exportSort"
+                value="recorded_date"
+                checked={sortField === 'recorded_date'}
+                onChange={() => setSortField('recorded_date')}
+              />
+              Recorded Date
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="exportSort"
+                value="doc_date"
+                checked={sortField === 'doc_date'}
+                onChange={() => setSortField('doc_date')}
+              />
+              Doc Date
+            </label>
+          </div>
+
           <button className="btn-export" onClick={exportToExcel}>
             Export to Excel
           </button>
