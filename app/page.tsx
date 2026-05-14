@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import * as XLSX from 'xlsx';
 
 interface InstrumentRow {
   vol_page: string;
@@ -37,11 +36,11 @@ function parseDate(dateStr: string): Date {
 function formatDate(dateStr: string): string {
   if (!dateStr || dateStr.trim() === '') return '';
   const d = parseDate(dateStr);
-  if (!d || d.getTime() === new Date(0).getTime()) return dateStr; // return original if unparseable
+  if (!d || d.getTime() === new Date(0).getTime()) return dateStr;
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   const yyyy = d.getFullYear();
-  if (yyyy < 1600 || yyyy > 2100) return dateStr; // sanity check, return original if weird year
+  if (yyyy < 1600 || yyyy > 2100) return dateStr;
   return `${mm}-${dd}-${yyyy}`;
 }
 
@@ -55,6 +54,7 @@ export default function Home() {
   const [files, setFiles] = useState<FileList | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [rows, setRows] = useState<InstrumentRow[]>([]);
   const [errors, setErrors] = useState<ExtractError[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -157,7 +157,6 @@ export default function Home() {
             const data = await res.json();
 
             if (data.rows && data.rows.length > 0) {
-              // Normalize dates to MM-DD-YYYY as they come in
               const normalized = data.rows.map((r: InstrumentRow) => ({
                 ...r,
                 doc_date: formatDate(r.doc_date),
@@ -210,70 +209,55 @@ export default function Home() {
     setRows((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function exportToExcel() {
+  async function exportToExcel() {
     if (rows.length === 0) {
       showStatus('No data to export', 'error');
       return;
     }
 
-    const sorted = getSorted(rows, sortField);
-    const sortLabel = sortField === 'recorded_date' ? 'Recorded Date' : 'Doc Date';
-    const today = new Date().toLocaleDateString('en-US');
-    const descriptionCell = `Description: ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
+    setIsExporting(true);
+    showStatus('Building formatted Excel file...', 'info');
 
-    const wsData: any[][] = [
-      [`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`, '', '', '', '', '', '', ''],
-      ['Abstractor Name:', abstractorName, '', '', '', '', 'Due Date:', today],
-      [descriptionCell, '', '', '', '', '', '', ''],
-      [`VOL/PAGE`, 'Instrument Type', `Doc. Date\n(sorted by ${sortLabel})`, 'Recorded Date', 'Grantor', 'Grantee', 'Description', 'Comments'],
-      ...sorted.map((r) => [
-        r.vol_page,
-        r.instrument_type,
-        formatDate(r.doc_date),
-        formatDate(r.recorded_date),
-        r.grantor,
-        r.grantee,
-        r.description,
-        r.comments,
-      ]),
-    ];
+    try {
+      const sorted = getSorted(rows, sortField);
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
+      const res = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          abstractorName,
+          propertyDescription,
+          parcelNumber,
+          acreage,
+          district,
+          county,
+          sortField,
+          rows: sorted,
+        }),
+      });
 
-    ws['!cols'] = [
-      { wch: 12 },   // A VOL/PAGE
-      { wch: 18 },   // B Instrument Type
-      { wch: 14 },   // C Doc Date
-      { wch: 14 },   // D Recorded Date
-      { wch: 20.7 }, // E Grantor
-      { wch: 20.7 }, // F Grantee
-      { wch: 27 },   // G Description
-      { wch: 36 },   // H Comments
-    ];
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Export failed (${res.status}): ${errText}`);
+      }
 
-    ws['!rows'] = [
-      { hpt: 33 },
-      { hpt: 77 },
-      { hpt: 52 },
-      { hpt: 57 },
-      ...sorted.map(() => ({ hpt: 100 })),
-    ];
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}_sortedBy${sortField === 'recorded_date' ? 'RecordedDate' : 'DocDate'}.xlsx`;
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
 
-    ws['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } },
-      { s: { r: 1, c: 2 }, e: { r: 1, c: 5 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } },
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Chain of Title');
-
-    const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
-    const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}_sortedBy${sortField === 'recorded_date' ? 'RecordedDate' : 'DocDate'}.xlsx`;
-    XLSX.writeFile(wb, filename);
-
-    showStatus(`Exported ${filename} (sorted by ${sortLabel})`, 'success');
+      const sortLabel = sortField === 'recorded_date' ? 'Recorded Date' : 'Doc Date';
+      showStatus(`Exported ${filename} (sorted by ${sortLabel})`, 'success');
+    } catch (err: unknown) {
+      showStatus(`Export failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   const displayedRows = getSorted(rows, tableSort);
@@ -456,8 +440,8 @@ export default function Home() {
             </label>
           </div>
 
-          <button className="btn-export" onClick={exportToExcel}>
-            Export to Excel
+          <button className="btn-export" onClick={exportToExcel} disabled={isExporting}>
+            {isExporting ? 'Building Excel...' : 'Export to Excel'}
           </button>
         </>
       )}
