@@ -44,6 +44,10 @@ function formatDate(dateStr: string): string {
   return `${mm}-${dd}-${yyyy}`;
 }
 
+const HELP_CHAR = '\u003F';
+const PAGE_TITLE = 'Oil \u0026 Gas Run Sheet Generator';
+const REVIEW_TITLE = 'Review \u0026 Edit Extracted Instruments';
+
 export default function Home() {
   const [abstractorName, setAbstractorName] = useState('');
   const [propertyDescription, setPropertyDescription] = useState('');
@@ -261,8 +265,6 @@ export default function Home() {
   }
 
   const displayedRows = getSorted(rows, tableSort);
-  const title = 'Oil and Gas Run Sheet Generator';
-  const reviewTitle = 'Review and Edit Extracted Instruments';
 
   return (
     <div className="container">
@@ -292,10 +294,10 @@ export default function Home() {
           boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
         }}
       >
-        <span>?</span>
+        {HELP_CHAR}
       </a>
 
-      <h1>{title}</h1>
+      <h1>{PAGE_TITLE}</h1>
 
       <div className="form-group">
         <label>Abstractor Name *</label>
@@ -369,7 +371,7 @@ export default function Home() {
       {rows.length > 0 && (
         <>
           <h2>
-            {reviewTitle}
+            {REVIEW_TITLE}
             <span style={{ fontSize: '0.85rem', fontWeight: 'normal', marginLeft: '1rem', color: '#555' }}>
               {rows.length} instrument(s) from {new Set(rows.map(r => r.source_file)).size} file(s)
               &nbsp;·&nbsp;
