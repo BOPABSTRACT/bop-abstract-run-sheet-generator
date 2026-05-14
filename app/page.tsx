@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import * as XLSX from 'xlsx';
 
 interface InstrumentRow {
   vol_page: string;
@@ -44,6 +45,74 @@ function formatDate(dateStr: string): string {
   return `${mm}-${dd}-${yyyy}`;
 }
 
+// Cell style helpers using XLSX's cell style format
+function makeStyle(overrides: Record<string, any> = {}) {
+  return {
+    font: { name: 'Calibri', sz: 11, ...overrides.font },
+    alignment: { vertical: 'top', wrap_text: true, ...overrides.alignment },
+    border: {
+      top:    { style: 'thin', color: { rgb: '000000' } },
+      bottom: { style: 'thin', color: { rgb: '000000' } },
+      left:   { style: 'thin', color: { rgb: '000000' } },
+      right:  { style: 'thin', color: { rgb: '000000' } },
+      ...overrides.border,
+    },
+    fill: overrides.fill || { patternType: 'none' },
+  };
+}
+
+const THICK = { style: 'thick', color: { rgb: '000000' } };
+const MEDIUM = { style: 'medium', color: { rgb: '000000' } };
+const THIN = { style: 'thin', color: { rgb: '000000' } };
+const NONE = { style: null };
+
+const titleStyle = makeStyle({
+  font: { name: 'Calibri', sz: 18 },
+  alignment: { horizontal: 'center', vertical: 'center', wrap_text: true },
+  border: { top: THICK, bottom: THICK, left: THICK, right: THICK },
+});
+
+const abstractorStyle = makeStyle({
+  font: { name: 'Calibri', sz: 18 },
+  alignment: { horizontal: 'center', vertical: 'center', wrap_text: true },
+  border: { top: THICK, bottom: THICK, left: THICK, right: THICK },
+});
+
+const dueDateStyle = makeStyle({
+  font: { name: 'Calibri', sz: 18 },
+  alignment: { horizontal: 'center', vertical: 'center', wrap_text: true },
+  border: { top: THICK, bottom: THICK, left: THICK, right: THICK },
+});
+
+const descStyle = makeStyle({
+  font: { name: 'Calibri', sz: 14 },
+  alignment: { horizontal: 'center', vertical: 'top', wrap_text: true },
+  border: { top: THICK, bottom: THICK, left: THICK, right: THICK },
+});
+
+const headerStyle = makeStyle({
+  font: { name: 'Calibri', sz: 11, bold: true },
+  alignment: { horizontal: 'center', vertical: 'center', wrap_text: true },
+  fill: { patternType: 'solid', fgColor: { rgb: 'FFFF00' } },
+  border: { top: MEDIUM, bottom: MEDIUM, left: MEDIUM, right: MEDIUM },
+});
+
+const dataCenterStyle = makeStyle({
+  font: { name: 'Calibri', sz: 11 },
+  alignment: { horizontal: 'center', vertical: 'top', wrap_text: true },
+  border: { top: NONE, bottom: THIN, left: THIN, right: THIN },
+});
+
+const dataLeftStyle = makeStyle({
+  font: { name: 'Calibri', sz: 11 },
+  alignment: { horizontal: 'left', vertical: 'top', wrap_text: true },
+  border: { top: NONE, bottom: THIN, left: THIN, right: THIN },
+});
+
+const emptyBorderStyle = makeStyle({
+  border: { top: THICK, bottom: THICK, left: NONE, right: NONE },
+});
+
 export default function Home() {
   const [abstractorName, setAbstractorName] = useState('');
   const [propertyDescription, setPropertyDescription] = useState('');
@@ -54,7 +123,6 @@ export default function Home() {
   const [files, setFiles] = useState<FileList | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [rows, setRows] = useState<InstrumentRow[]>([]);
   const [errors, setErrors] = useState<ExtractError[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -209,55 +277,108 @@ export default function Home() {
     setRows((prev) => prev.filter((_, i) => i !== index));
   }
 
-  async function exportToExcel() {
+  function sc(value: any, style: any) {
+    return { v: value, t: 's', s: style };
+  }
+
+  function exportToExcel() {
     if (rows.length === 0) {
       showStatus('No data to export', 'error');
       return;
     }
 
-    setIsExporting(true);
-    showStatus('Building formatted Excel file...', 'info');
+    const sorted = getSorted(rows, sortField);
+    const sortLabel = sortField === 'recorded_date' ? 'Recorded Date' : 'Doc Date';
+    const today = new Date().toLocaleDateString('en-US');
+    const descValue = `Description: ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
 
-    try {
-      const sorted = getSorted(rows, sortField);
+    const wb = XLSX.utils.book_new();
+    const ws: any = {};
 
-      const res = await fetch('/api/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          abstractorName,
-          propertyDescription,
-          parcelNumber,
-          acreage,
-          district,
-          county,
-          sortField,
-          rows: sorted,
-        }),
-      });
+    // ── Row 1: Title ────────────────────────────────────────────────────
+    ws['A1'] = sc(`RUN SHEET - ${abstractorName} - CHAIN OF TITLE`, titleStyle);
+    ['B','C','D','E','F','G','H'].forEach(c => { ws[`${c}1`] = sc('', titleStyle); });
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Export failed (${res.status}): ${errText}`);
-      }
+    // ── Row 2: Abstractor / Due Date ────────────────────────────────────
+    ws['A2'] = sc(`Abstractor Name:  ${abstractorName}`, abstractorStyle);
+    ws['B2'] = sc('', abstractorStyle);
+    ['C','D','E','F'].forEach(c => { ws[`${c}2`] = sc('', emptyBorderStyle); });
+    ws['G2'] = sc(`Due Date:  ${today}`, dueDateStyle);
+    ws['H2'] = sc('', dueDateStyle);
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}_sortedBy${sortField === 'recorded_date' ? 'RecordedDate' : 'DocDate'}.xlsx`;
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+    // ── Row 3: Description ──────────────────────────────────────────────
+    ws['A3'] = sc(descValue, descStyle);
+    ['B','C','D','E','F','G','H'].forEach(c => { ws[`${c}3`] = sc('', descStyle); });
 
-      const sortLabel = sortField === 'recorded_date' ? 'Recorded Date' : 'Doc Date';
-      showStatus(`Exported ${filename} (sorted by ${sortLabel})`, 'success');
-    } catch (err: unknown) {
-      showStatus(`Export failed: ${err instanceof Error ? err.message : String(err)}`, 'error');
-    } finally {
-      setIsExporting(false);
-    }
+    // ── Row 4: Headers ──────────────────────────────────────────────────
+    const headers = [
+      'VOL/PAGE',
+      'Instrument Type',
+      `Doc. Date\n(sorted by ${sortLabel})`,
+      'Recorded Date',
+      'Grantor',
+      'Grantee',
+      'Description',
+      'Comments',
+    ];
+    const cols = ['A','B','C','D','E','F','G','H'];
+    headers.forEach((h, i) => {
+      ws[`${cols[i]}4`] = sc(h, headerStyle);
+    });
+
+    // ── Data rows ───────────────────────────────────────────────────────
+    sorted.forEach((row, idx) => {
+      const r = idx + 5;
+      ws[`A${r}`] = sc(row.vol_page, dataCenterStyle);
+      ws[`B${r}`] = sc(row.instrument_type, dataCenterStyle);
+      ws[`C${r}`] = sc(formatDate(row.doc_date), dataCenterStyle);
+      ws[`D${r}`] = sc(formatDate(row.recorded_date), dataCenterStyle);
+      ws[`E${r}`] = sc(row.grantor, dataLeftStyle);
+      ws[`F${r}`] = sc(row.grantee, dataLeftStyle);
+      ws[`G${r}`] = sc(row.description, dataLeftStyle);
+      ws[`H${r}`] = sc(row.comments, dataLeftStyle);
+    });
+
+    // ── Sheet range ─────────────────────────────────────────────────────
+    ws['!ref'] = `A1:H${sorted.length + 4}`;
+
+    // ── Column widths ───────────────────────────────────────────────────
+    ws['!cols'] = [
+      { wch: 12 },   // A VOL/PAGE
+      { wch: 18 },   // B Instrument Type
+      { wch: 13 },   // C Doc Date
+      { wch: 13 },   // D Recorded Date
+      { wch: 22 },   // E Grantor
+      { wch: 22 },   // F Grantee
+      { wch: 30 },   // G Description
+      { wch: 36 },   // H Comments
+    ];
+
+    // ── Row heights ─────────────────────────────────────────────────────
+    ws['!rows'] = [
+      { hpt: 33 },
+      { hpt: 57 },
+      { hpt: 52 },
+      { hpt: 43 },
+      ...sorted.map(() => ({ hpt: 80 })),
+    ];
+
+    // ── Merges ──────────────────────────────────────────────────────────
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // A1:H1
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 1 } }, // A2:B2
+      { s: { r: 1, c: 2 }, e: { r: 1, c: 5 } }, // C2:F2
+      { s: { r: 1, c: 6 }, e: { r: 1, c: 7 } }, // G2:H2
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 7 } }, // A3:H3
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Chain of Title');
+
+    const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}_sortedBy${sortField === 'recorded_date' ? 'RecordedDate' : 'DocDate'}.xlsx`;
+    XLSX.writeFile(wb, filename, { cellStyles: true });
+
+    showStatus(`Exported ${filename} (sorted by ${sortLabel})`, 'success');
   }
 
   const displayedRows = getSorted(rows, tableSort);
@@ -351,23 +472,11 @@ export default function Home() {
           <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ fontWeight: 600 }}>Sort table by:</span>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="tableSort"
-                value="recorded_date"
-                checked={tableSort === 'recorded_date'}
-                onChange={() => setTableSort('recorded_date')}
-              />
+              <input type="radio" name="tableSort" value="recorded_date" checked={tableSort === 'recorded_date'} onChange={() => setTableSort('recorded_date')} />
               Recorded Date
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="tableSort"
-                value="doc_date"
-                checked={tableSort === 'doc_date'}
-                onChange={() => setTableSort('doc_date')}
-              />
+              <input type="radio" name="tableSort" value="doc_date" checked={tableSort === 'doc_date'} onChange={() => setTableSort('doc_date')} />
               Doc Date
             </label>
           </div>
@@ -419,29 +528,17 @@ export default function Home() {
           <div style={{ marginTop: '1.5rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ fontWeight: 600 }}>Export sorted by:</span>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="exportSort"
-                value="recorded_date"
-                checked={sortField === 'recorded_date'}
-                onChange={() => setSortField('recorded_date')}
-              />
+              <input type="radio" name="exportSort" value="recorded_date" checked={sortField === 'recorded_date'} onChange={() => setSortField('recorded_date')} />
               Recorded Date
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="exportSort"
-                value="doc_date"
-                checked={sortField === 'doc_date'}
-                onChange={() => setSortField('doc_date')}
-              />
+              <input type="radio" name="exportSort" value="doc_date" checked={sortField === 'doc_date'} onChange={() => setSortField('doc_date')} />
               Doc Date
             </label>
           </div>
 
-          <button className="btn-export" onClick={exportToExcel} disabled={isExporting}>
-            {isExporting ? 'Building Excel...' : 'Export to Excel'}
+          <button className="btn-export" onClick={exportToExcel} disabled={isProcessing}>
+            Export to Excel
           </button>
         </>
       )}
