@@ -265,7 +265,6 @@ export default function Home() {
   return (
     <div className="container">
 
-      {/* Help icon — fixed top right */}
       
         href="/user-guide.html"
         target="_blank"
