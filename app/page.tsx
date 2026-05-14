@@ -264,58 +264,47 @@ export default function Home() {
 
   return (
     <div className="container">
+      <a href="/user-guide.html" target="_blank" rel="noopener noreferrer" className="help-btn">User Guide</a>
 
-      
-        href="/user-guide.html"
-        target="_blank"
-        rel="noopener noreferrer"
-        title="Open User Guide"
-        className="help-btn"
-      >
-        Help
-      </a>
-
-      <h1>{'Oil and Gas Run Sheet Generator'}</h1>
+      <h1>{'Oil & Gas Run Sheet Generator'}</h1>
 
       <div className="form-group">
-        <label>Abstractor Name *</label>
+        <label>{'Abstractor Name *'}</label>
         <input type="text" value={abstractorName} onChange={(e) => setAbstractorName(e.target.value)} placeholder="Enter your name" />
       </div>
 
       <div className="form-group">
-        <label>Property Description *</label>
+        <label>{'Property Description *'}</label>
         <textarea value={propertyDescription} onChange={(e) => setPropertyDescription(e.target.value)} placeholder="Enter property description" />
       </div>
 
       <div className="form-group">
-        <label>Parcel Number</label>
+        <label>{'Parcel Number'}</label>
         <input type="text" value={parcelNumber} onChange={(e) => setParcelNumber(e.target.value)} placeholder="e.g., 12-22-7" />
       </div>
 
       <div className="form-group">
-        <label>Acreage</label>
+        <label>{'Acreage'}</label>
         <input type="text" value={acreage} onChange={(e) => setAcreage(e.target.value)} placeholder="e.g., 16.4" />
       </div>
 
       <div className="form-group">
-        <label>District</label>
+        <label>{'District'}</label>
         <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="e.g., Mannington District" />
       </div>
 
       <div className="form-group">
-        <label>County</label>
+        <label>{'County'}</label>
         <input type="text" value={county} onChange={(e) => setCounty(e.target.value)} placeholder="e.g., Marion" />
       </div>
 
       <div className="form-group">
-        <label>Upload PDFs</label>
+        <label>{'Upload PDFs'}</label>
         <input type="file" multiple accept=".pdf" onChange={(e) => setFiles(e.target.files)} />
       </div>
 
       <div className="button-group">
-        <button className="btn-demo" onClick={generateDemo} disabled={isProcessing}>
-          Generate Demo Sample
-        </button>
+        <button className="btn-demo" onClick={generateDemo} disabled={isProcessing}>{'Generate Demo Sample'}</button>
         <button className="btn-real" onClick={generateWithAPI} disabled={isProcessing}>
           {isProcessing ? 'Processing...' : 'Generate with Real Data'}
         </button>
@@ -323,51 +312,36 @@ export default function Home() {
 
       {progress && (
         <div className="progress-bar-container">
-          <div
-            className="progress-bar"
-            style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
-          />
-          <span className="progress-label">
-            {progress.done} of {progress.total} files done
-          </span>
+          <div className="progress-bar" style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }} />
+          <span className="progress-label">{progress.done} of {progress.total} files done</span>
         </div>
       )}
 
       {status && <div className={`status ${status.type}`}>{status.message}</div>}
 
       {errors.length > 0 && (
-        <>
-          <h2>Errors</h2>
+        <div>
+          <h2>{'Errors'}</h2>
           <ul>
             {errors.map((e, i) => (
-              <li key={i}><strong>{e.file}</strong>: {e.error}</li>
+              <li key={i}><strong>{e.file}</strong>{': '}{e.error}</li>
             ))}
           </ul>
-        </>
+        </div>
       )}
 
       {rows.length > 0 && (
-        <>
-          <h2>
-            Review and Edit Extracted Instruments
-            <span style={{ fontSize: '0.85rem', fontWeight: 'normal', marginLeft: '1rem', color: '#555' }}>
-              {rows.length} instrument(s) from {new Set(rows.map(r => r.source_file)).size} file(s)
-              &nbsp;·&nbsp;
-              <span style={{ color: '#2d6a2d' }}>■ High</span>&nbsp;
-              <span style={{ color: '#8a6d00' }}>■ Medium</span>&nbsp;
-              <span style={{ color: '#8a0000' }}>■ Low — review needed</span>
-            </span>
-          </h2>
-
+        <div>
+          <h2>{'Review and Edit Extracted Instruments'}</h2>
           <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontWeight: 600 }}>Sort table by:</span>
+            <span style={{ fontWeight: 600 }}>{'Sort table by:'}</span>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
               <input type="radio" name="tableSort" value="recorded_date" checked={tableSort === 'recorded_date'} onChange={() => setTableSort('recorded_date')} />
-              Recorded Date
+              {'Recorded Date'}
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
               <input type="radio" name="tableSort" value="doc_date" checked={tableSort === 'doc_date'} onChange={() => setTableSort('doc_date')} />
-              Doc Date
+              {'Doc Date'}
             </label>
           </div>
 
@@ -375,17 +349,17 @@ export default function Home() {
             <table className="results-table">
               <thead>
                 <tr>
-                  <th>Source</th>
-                  <th>VOL/PAGE</th>
-                  <th>Instrument Type</th>
-                  <th>Doc Date</th>
-                  <th>Recorded Date</th>
-                  <th>Grantor</th>
-                  <th>Grantee</th>
-                  <th>Description</th>
-                  <th>Comments</th>
-                  <th>Notes for Reviewer</th>
-                  <th>Actions</th>
+                  <th>{'Source'}</th>
+                  <th>{'VOL/PAGE'}</th>
+                  <th>{'Instrument Type'}</th>
+                  <th>{'Doc Date'}</th>
+                  <th>{'Recorded Date'}</th>
+                  <th>{'Grantor'}</th>
+                  <th>{'Grantee'}</th>
+                  <th>{'Description'}</th>
+                  <th>{'Comments'}</th>
+                  <th>{'Notes for Reviewer'}</th>
+                  <th>{'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -404,11 +378,10 @@ export default function Home() {
                       <input
                         value={row.notes_for_reviewer}
                         onChange={(e) => updateRow(rows.indexOf(row), 'notes_for_reviewer', e.target.value)}
-                        style={{ fontStyle: row.notes_for_reviewer ? 'italic' : 'normal', color: row.notes_for_reviewer ? '#8a0000' : 'inherit' }}
                         placeholder="—"
                       />
                     </td>
-                    <td><button onClick={() => deleteRow(rows.indexOf(row))}>Delete</button></td>
+                    <td><button onClick={() => deleteRow(rows.indexOf(row))}>{'Delete'}</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -416,21 +389,21 @@ export default function Home() {
           </div>
 
           <div style={{ marginTop: '1.5rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontWeight: 600 }}>Export sorted by:</span>
+            <span style={{ fontWeight: 600 }}>{'Export sorted by:'}</span>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
               <input type="radio" name="exportSort" value="recorded_date" checked={sortField === 'recorded_date'} onChange={() => setSortField('recorded_date')} />
-              Recorded Date
+              {'Recorded Date'}
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
               <input type="radio" name="exportSort" value="doc_date" checked={sortField === 'doc_date'} onChange={() => setSortField('doc_date')} />
-              Doc Date
+              {'Doc Date'}
             </label>
           </div>
 
           <button className="btn-export" onClick={exportToExcel} disabled={isProcessing || isExporting}>
             {isExporting ? 'Building Excel...' : 'Export to Excel'}
           </button>
-        </>
+        </div>
       )}
     </div>
   );
