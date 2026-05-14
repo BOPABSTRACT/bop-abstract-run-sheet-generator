@@ -261,6 +261,8 @@ export default function Home() {
   }
 
   const displayedRows = getSorted(rows, tableSort);
+  const title = 'Oil and Gas Run Sheet Generator';
+  const reviewTitle = 'Review and Edit Extracted Instruments';
 
   return (
     <div className="container">
@@ -293,7 +295,7 @@ export default function Home() {
         <span>?</span>
       </a>
 
-      <h1>Oil and Gas Run Sheet Generator</h1>
+      <h1>{title}</h1>
 
       <div className="form-group">
         <label>Abstractor Name *</label>
@@ -367,7 +369,7 @@ export default function Home() {
       {rows.length > 0 && (
         <>
           <h2>
-            Review and Edit Extracted Instruments
+            {reviewTitle}
             <span style={{ fontSize: '0.85rem', fontWeight: 'normal', marginLeft: '1rem', color: '#555' }}>
               {rows.length} instrument(s) from {new Set(rows.map(r => r.source_file)).size} file(s)
               &nbsp;·&nbsp;
