@@ -242,14 +242,14 @@ export default function Home() {
       }
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
       const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}_sortedBy${sortField === 'recorded_date' ? 'RecordedDate' : 'DocDate'}.xlsx`;
-      a.href = url;
+      a.href = blobUrl;
       a.download = filename;
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(blobUrl);
 
       const sortLabel = sortField === 'recorded_date' ? 'Recorded Date' : 'Doc Date';
       showStatus(`Exported ${filename} (sorted by ${sortLabel})`, 'success');
@@ -262,26 +262,6 @@ export default function Home() {
 
   const displayedRows = getSorted(rows, tableSort);
 
-  const helpButtonStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: '1.1rem',
-    right: '1.25rem',
-    zIndex: 1000,
-    width: '38px',
-    height: '38px',
-    borderRadius: '50%',
-    background: '#1a1a2e',
-    color: '#c9a84c',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'Georgia, serif',
-    fontWeight: '700',
-    fontSize: '1.15rem',
-    textDecoration: 'none',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-  };
-
   return (
     <div className="container">
 
@@ -290,12 +270,30 @@ export default function Home() {
         target="_blank"
         rel="noopener noreferrer"
         title="Open User Guide"
-        style={helpButtonStyle}
+        style={{
+          position: 'fixed',
+          top: '1.1rem',
+          right: '1.25rem',
+          zIndex: 1000,
+          width: '38px',
+          height: '38px',
+          borderRadius: '50%',
+          background: '#1a1a2e',
+          color: '#c9a84c',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: 'Georgia, serif',
+          fontWeight: '700',
+          fontSize: '1.15rem',
+          textDecoration: 'none',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+        }}
       >
-        {'?'}
+        ?
       </a>
 
-      <h1>Oil &amp; Gas Run Sheet Generator</h1>
+      <h1>Oil and Gas Run Sheet Generator</h1>
 
       <div className="form-group">
         <label>Abstractor Name *</label>
@@ -369,7 +367,7 @@ export default function Home() {
       {rows.length > 0 && (
         <>
           <h2>
-            Review &amp; Edit Extracted Instruments
+            Review and Edit Extracted Instruments
             <span style={{ fontSize: '0.85rem', fontWeight: 'normal', marginLeft: '1rem', color: '#555' }}>
               {rows.length} instrument(s) from {new Set(rows.map(r => r.source_file)).size} file(s)
               &nbsp;·&nbsp;
@@ -404,7 +402,7 @@ export default function Home() {
                   <th>Grantee</th>
                   <th>Description</th>
                   <th>Comments</th>
-                  <th>⚠ Notes for Reviewer</th>
+                  <th>Notes for Reviewer</th>
                   <th>Actions</th>
                 </tr>
               </thead>
