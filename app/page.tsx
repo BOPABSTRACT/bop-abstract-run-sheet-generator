@@ -275,7 +275,7 @@ export default function Home() {
         Help
       </a>
 
-      <h1>Oil and Gas Run Sheet Generator</h1>
+      <h1>{'Oil and Gas Run Sheet Generator'}</h1>
 
       <div className="form-group">
         <label>Abstractor Name *</label>
