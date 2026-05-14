@@ -264,6 +264,45 @@ export default function Home() {
 
   return (
     <div className="container">
+
+      {/* Help icon — fixed top right */}
+      
+        href="/user-guide.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Open User Guide"
+        style={{
+          position: 'fixed',
+          top: '1.1rem',
+          right: '1.25rem',
+          zIndex: 1000,
+          width: '38px',
+          height: '38px',
+          borderRadius: '50%',
+          background: '#1a1a2e',
+          color: '#c9a84c',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: 'Georgia, serif',
+          fontWeight: '700',
+          fontSize: '1.15rem',
+          textDecoration: 'none',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+        }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLElement).style.transform = 'scale(1.1)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.3)';
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
+          (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.25)';
+        }}
+      >
+        ?
+      </a>
+
       <h1>Oil &amp; Gas Run Sheet Generator</h1>
 
       <div className="form-group">
