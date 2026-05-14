@@ -111,24 +111,21 @@ export default function RootLayout({
             padding: 4px;
             vertical-align: top;
           }
-          .results-table textarea {
+          .results-table input {
             width: 100%;
             border: none;
             background: transparent;
             font-size: 12px;
-            min-height: 30px;
             padding: 4px;
+            font-family: Arial, sans-serif;
           }
-          .results-table textarea:focus {
+          .results-table input:focus {
             background: #FEF3C7;
             outline: 1px solid #D97706;
           }
           .conf-high { background: #D1FAE5; }
           .conf-medium { background: #FEF3C7; }
           .conf-low { background: #FEE2E2; }
-          .row-actions {
-            white-space: nowrap;
-          }
           .btn-small {
             padding: 4px 8px;
             font-size: 11px;
@@ -137,6 +134,55 @@ export default function RootLayout({
             border: none;
             border-radius: 3px;
             cursor: pointer;
+          }
+          .progress-bar-container {
+            margin-top: 15px;
+            background: #E5E7EB;
+            border-radius: 4px;
+            height: 24px;
+            position: relative;
+            overflow: hidden;
+          }
+          .progress-bar {
+            height: 100%;
+            background: #D97706;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+          }
+          .progress-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            font-weight: bold;
+            color: #1F2937;
+          }
+          .help-btn {
+            position: fixed;
+            top: 1.1rem;
+            right: 1.25rem;
+            z-index: 1000;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #1F2937;
+            color: #D97706;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Georgia, serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            transition: transform 0.15s, box-shadow 0.15s;
+          }
+          .help-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+            background: #D97706;
+            color: #1F2937;
           }
         `}</style>
       </head>
