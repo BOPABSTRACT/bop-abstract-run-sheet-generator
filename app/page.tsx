@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+const LOGO = 'https://i.imgur.com/szjzoxt.png';
+
 interface InstrumentRow {
   vol_page: string;
   instrument_type: string;
@@ -45,6 +47,9 @@ function formatDate(dateStr: string): string {
 }
 
 export default function Home() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
   const [abstractorName, setAbstractorName] = useState('');
   const [propertyDescription, setPropertyDescription] = useState('');
   const [parcelNumber, setParcelNumber] = useState('');
@@ -60,6 +65,15 @@ export default function Home() {
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [sortField, setSortField] = useState<'recorded_date' | 'doc_date'>('recorded_date');
   const [tableSort, setTableSort] = useState<'recorded_date' | 'doc_date'>('recorded_date');
+
+  function handlePasswordSubmit() {
+    if (passwordInput === 'BOP2026') {
+      setAuthenticated(true);
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+    }
+  }
 
   function showStatus(message: string, type: 'success' | 'error' | 'info') {
     setStatus({ message, type });
@@ -237,6 +251,86 @@ export default function Home() {
 
   const displayedRows = getSorted(rows, tableSort);
 
+  // ── Password screen ───────────────────────────────────────────────────────
+  if (!authenticated) {
+    return (
+      <main style={{
+        minHeight: '100vh',
+        background: '#0f1117',
+        fontFamily: 'Georgia, serif',
+        color: '#e8e0d0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{
+          background: '#0d0f14',
+          border: '1px solid #2a2a3a',
+          borderRadius: 12,
+          padding: '48px 40px',
+          width: '100%',
+          maxWidth: 400,
+          textAlign: 'center',
+        }}>
+          <img
+            src={LOGO}
+            alt="BOP Abstract Logo"
+            style={{ width: 140, height: 140, objectFit: 'contain', margin: '0 auto 24px', display: 'block' }}
+          />
+          <div style={{ fontSize: 20, fontWeight: 600, color: '#c8a96e', marginBottom: 4 }}>
+            BOP ABSTRACT
+          </div>
+          <div style={{ fontSize: 12, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32 }}>
+            Run Sheet Generator
+          </div>
+          <input
+            type="password"
+            placeholder="Enter password"
+            value={passwordInput}
+            onChange={(e) => { setPasswordInput(e.target.value); setPasswordError(false); }}
+            onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              background: '#0f1117',
+              border: `1px solid ${passwordError ? '#8b2020' : '#2a2a3a'}`,
+              borderRadius: 6,
+              color: '#e8e0d0',
+              fontSize: 15,
+              fontFamily: 'Georgia, serif',
+              boxSizing: 'border-box',
+              marginBottom: 12,
+              outline: 'none',
+            }}
+          />
+          {passwordError && (
+            <div style={{ color: '#e07070', fontSize: 13, marginBottom: 12 }}>
+              Incorrect password. Please try again.
+            </div>
+          )}
+          <button
+            onClick={handlePasswordSubmit}
+            style={{
+              width: '100%',
+              padding: '12px 32px',
+              background: 'linear-gradient(135deg, #c8a96e, #8b6914)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              fontSize: 15,
+              fontFamily: 'Georgia, serif',
+              cursor: 'pointer',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Enter
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  // ── Main app ──────────────────────────────────────────────────────────────
   return (
     <div className="container">
       <a href="/user-guide.html" target="_blank" rel="noopener noreferrer" className="help-btn">User Guide</a>
