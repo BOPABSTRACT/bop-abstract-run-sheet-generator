@@ -71,31 +71,6 @@ export default function Home() {
     );
   }
 
-  function generateDemo() {
-    if (!abstractorName || !propertyDescription) {
-      showStatus('Please fill in Abstractor Name and Property Description', 'error');
-      return;
-    }
-    const demoRows: InstrumentRow[] = [
-      {
-        vol_page: 'DB 1094/697',
-        instrument_type: 'General Warranty Deed',
-        doc_date: '08-08-2011',
-        recorded_date: '08-23-2011',
-        grantor: 'George R. Freeland, widower',
-        grantee: 'Kevin D. Moore or Kelley Moore, his wife, as joint tenants with the right of survivorship and not as tenants in common',
-        description: 'All that certain tract or parcel of real estate, situate on Pyles Fork of Buffalo Creek, in Mannington District, Marion County, West Virginia, containing 16.4 acres, more or less',
-        comments: 'Prior Deed Reference: DB 359/390; WB 68/766; WB 70/804; DB 956/387',
-        confidence: 'high',
-        notes_for_reviewer: '',
-        source_file: 'DEMO_SAMPLE.pdf',
-      },
-    ];
-    setRows(demoRows);
-    setErrors([]);
-    showStatus('Demo row loaded. Click Export to Excel to download.', 'success');
-  }
-
   async function generateWithAPI() {
     if (!abstractorName) {
       showStatus('Please fill in Abstractor Name', 'error');
@@ -304,7 +279,6 @@ export default function Home() {
       </div>
 
       <div className="button-group">
-        <button className="btn-demo" onClick={generateDemo} disabled={isProcessing}>{'Generate Demo Sample'}</button>
         <button className="btn-real" onClick={generateWithAPI} disabled={isProcessing}>
           {isProcessing ? 'Processing...' : 'Generate with Real Data'}
         </button>
