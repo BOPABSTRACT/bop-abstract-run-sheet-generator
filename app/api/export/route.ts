@@ -4,6 +4,43 @@ import ExcelJS from 'exceljs';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
+// Estimate row height needed based on text length and column width
+function estimateRowHeight(row: any, colWidths: number[]): number {
+  const textCols = [
+    { text: row.grantor || '', width: colWidths[4] },
+    { text: row.grantee || '', width: colWidths[5] },
+    { text: row.description || '', width: colWidths[6] },
+    { text: row.comments || '', width: colWidths[7] },
+  ];
+
+  const CHAR_WIDTH = 1.1;
+  const LINE_HEIGHT = 15;
+  const MIN_HEIGHT = 40;
+  const PADDING = 10;
+
+  let maxLines = 1;
+  for (const col of textCols) {
+    if (!col.text) continue;
+    const charsPerLine = Math.floor(col.width / CHAR_WIDTH);
+    const words = col.text.split(' ');
+    let lines = 1;
+    let lineLen = 0;
+    for (const word of words) {
+      if (lineLen + word.length + 1 > charsPerLine) {
+        lines++;
+        lineLen = word.length;
+      } else {
+        lineLen += word.length + 1;
+      }
+    }
+    // Also count explicit newlines
+    lines += (col.text.match(/\n/g) || []).length;
+    if (lines > maxLines) maxLines = lines;
+  }
+
+  return Math.max(MIN_HEIGHT, maxLines * LINE_HEIGHT + PADDING);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -24,16 +61,18 @@ export async function POST(req: NextRequest) {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Chain of Title');
 
+    const colWidths = [14, 20, 13, 13, 24, 24, 32, 38];
+
     // ── Column widths ─────────────────────────────────────────────────────
     ws.columns = [
-      { key: 'a', width: 14 },   // A VOL/PAGE
-      { key: 'b', width: 20 },   // B Instrument Type
-      { key: 'c', width: 13 },   // C Doc Date
-      { key: 'd', width: 13 },   // D Recorded Date
-      { key: 'e', width: 24 },   // E Grantor
-      { key: 'f', width: 24 },   // F Grantee
-      { key: 'g', width: 32 },   // G Description
-      { key: 'h', width: 38 },   // H Comments
+      { key: 'a', width: colWidths[0] },
+      { key: 'b', width: colWidths[1] },
+      { key: 'c', width: colWidths[2] },
+      { key: 'd', width: colWidths[3] },
+      { key: 'e', width: colWidths[4] },
+      { key: 'f', width: colWidths[5] },
+      { key: 'g', width: colWidths[6] },
+      { key: 'h', width: colWidths[7] },
     ];
 
     // ── Shared style helpers ──────────────────────────────────────────────
@@ -91,21 +130,18 @@ export async function POST(req: NextRequest) {
     ws.mergeCells('C2:F2');
     ws.mergeCells('G2:H2');
 
-    // A2:B2 — Label
     const abLabelCell = ws.getCell('A2');
     abLabelCell.value = 'Abstractor Name:';
     abLabelCell.font = { name: 'Calibri', size: 18 };
     abLabelCell.alignment = centerMiddle;
     abLabelCell.border = thickBorder;
 
-    // C2:F2 — Abstractor name value
     const abCell = ws.getCell('C2');
     abCell.value = abstractorName;
     abCell.font = { name: 'Calibri', size: 18 };
     abCell.alignment = centerMiddle;
     abCell.border = thickBorder;
 
-    // G2:H2 — Due Date
     const dueCell = ws.getCell('G2');
     dueCell.value = `Due Date:  ${today}`;
     dueCell.font = { name: 'Calibri', size: 18 };
@@ -147,7 +183,9 @@ export async function POST(req: NextRequest) {
     rows.forEach((r: any, idx: number) => {
       const rowNum = idx + 5;
       const exRow = ws.getRow(rowNum);
-      exRow.height = 60;
+
+      // Auto-calculate height based on longest wrapped text in G and H
+      exRow.height = estimateRowHeight(r, colWidths);
 
       const data = [
         r.vol_page        || '',
