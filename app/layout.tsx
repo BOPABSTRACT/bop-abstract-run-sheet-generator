@@ -160,28 +160,23 @@ export default function RootLayout({
           }
           .help-btn {
             position: fixed;
-            top: 1.1rem;
+            top: 1rem;
             right: 1.25rem;
             z-index: 1000;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
             background: #1F2937;
             color: #D97706;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: Georgia, serif;
-            font-weight: 700;
-            font-size: 0.75rem;
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 0.85rem;
             text-decoration: none;
             box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-            transition: transform 0.15s, box-shadow 0.15s;
-            letter-spacing: 0.02em;
+            white-space: nowrap;
+            letter-spacing: 0.03em;
           }
           .help-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
             background: #D97706;
             color: #1F2937;
           }
