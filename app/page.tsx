@@ -93,7 +93,7 @@ export default function Home() {
     ];
     setRows(demoRows);
     setErrors([]);
-    showStatus('Demo row loaded. Click "Export to Excel" to download.', 'success');
+    showStatus('Demo row loaded. Click Export to Excel to download.', 'success');
   }
 
   async function generateWithAPI() {
@@ -290,7 +290,7 @@ export default function Home() {
           boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
         }}
       >
-        ?
+        <span>?</span>
       </a>
 
       <h1>Oil and Gas Run Sheet Generator</h1>
