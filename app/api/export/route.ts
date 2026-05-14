@@ -77,8 +77,7 @@ export async function POST(req: NextRequest) {
     };
 
     // ── ROW 1: Title ──────────────────────────────────────────────────────
-    const row1 = ws.getRow(1);
-    row1.height = 33;
+    ws.getRow(1).height = 33;
     ws.mergeCells('A1:H1');
     const titleCell = ws.getCell('A1');
     titleCell.value = `RUN SHEET - ${abstractorName} - CHAIN OF TITLE`;
@@ -87,27 +86,26 @@ export async function POST(req: NextRequest) {
     titleCell.border = thickBorder;
 
     // ── ROW 2: Abstractor / Due Date ──────────────────────────────────────
-    const row2 = ws.getRow(2);
-    row2.height = 57;
+    ws.getRow(2).height = 57;
     ws.mergeCells('A2:B2');
     ws.mergeCells('C2:F2');
     ws.mergeCells('G2:H2');
 
-    const abCell = ws.getCell('A2');
-    abCell.value = `Abstractor Name:  ${abstractorName}`;
+    // A2:B2 — Label
+    const abLabelCell = ws.getCell('A2');
+    abLabelCell.value = 'Abstractor Name:';
+    abLabelCell.font = { name: 'Calibri', size: 18 };
+    abLabelCell.alignment = centerMiddle;
+    abLabelCell.border = thickBorder;
+
+    // C2:F2 — Abstractor name value
+    const abCell = ws.getCell('C2');
+    abCell.value = abstractorName;
     abCell.font = { name: 'Calibri', size: 18 };
     abCell.alignment = centerMiddle;
     abCell.border = thickBorder;
 
-    // blank middle merge — just border
-    const midCell = ws.getCell('C2');
-    midCell.border = {
-      top: { style: 'thick' },
-      bottom: { style: 'thick' },
-      left: { style: 'thin' },
-      right: { style: 'thin' },
-    };
-
+    // G2:H2 — Due Date
     const dueCell = ws.getCell('G2');
     dueCell.value = `Due Date:  ${today}`;
     dueCell.font = { name: 'Calibri', size: 18 };
@@ -115,8 +113,7 @@ export async function POST(req: NextRequest) {
     dueCell.border = thickBorder;
 
     // ── ROW 3: Description ────────────────────────────────────────────────
-    const row3 = ws.getRow(3);
-    row3.height = 52;
+    ws.getRow(3).height = 52;
     ws.mergeCells('A3:H3');
     const descCell = ws.getCell('A3');
     descCell.value = `Description: ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
@@ -125,8 +122,7 @@ export async function POST(req: NextRequest) {
     descCell.border = thickBorder;
 
     // ── ROW 4: Column Headers ─────────────────────────────────────────────
-    const row4 = ws.getRow(4);
-    row4.height = 43;
+    ws.getRow(4).height = 43;
     const headers = [
       'VOL/PAGE',
       'Instrument Type',
@@ -151,17 +147,17 @@ export async function POST(req: NextRequest) {
     rows.forEach((r: any, idx: number) => {
       const rowNum = idx + 5;
       const exRow = ws.getRow(rowNum);
-      exRow.height = 60; // base height — Excel expands further if text wraps more
+      exRow.height = 60;
 
       const data = [
-        r.vol_page       || '',
-        r.instrument_type|| '',
-        r.doc_date       || '',
-        r.recorded_date  || '',
-        r.grantor        || '',
-        r.grantee        || '',
-        r.description    || '',
-        r.comments       || '',
+        r.vol_page        || '',
+        r.instrument_type || '',
+        r.doc_date        || '',
+        r.recorded_date   || '',
+        r.grantor         || '',
+        r.grantee         || '',
+        r.description     || '',
+        r.comments        || '',
       ];
 
       data.forEach((val, ci) => {
@@ -169,7 +165,6 @@ export async function POST(req: NextRequest) {
         cell.value = val;
         cell.font = { name: 'Calibri', size: 11 };
         cell.border = dataBorder;
-        // center for vol/page, instrument, dates; left for names and text
         cell.alignment = ci <= 3 ? centerWrap : leftWrap;
       });
     });
