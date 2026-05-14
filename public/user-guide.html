@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Guide - Oil and Gas Run Sheet Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #F3F4F6;
+      color: #1F2937;
+      line-height: 1.7;
+    }
+    header {
+      background: #1F2937;
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      border-bottom: 4px solid #D97706;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      color: #D97706;
+      margin-bottom: 0.5rem;
+    }
+    header p {
+      color: #9CA3AF;
+      font-size: 0.95rem;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      max-width: 1100px;
+      margin: 0 auto;
+      min-height: calc(100vh - 120px);
+    }
+    aside {
+      background: white;
+      border-right: 1px solid #E5E7EB;
+      padding: 2rem 1rem;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    aside h3 {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #D97706;
+      margin-bottom: 0.75rem;
+      margin-top: 1.25rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    aside a {
+      display: block;
+      font-size: 0.85rem;
+      color: #4B5563;
+      text-decoration: none;
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.1rem;
+      border-left: 2px solid transparent;
+    }
+    aside a:hover {
+      background: #FEF3C7;
+      color: #1F2937;
+      border-left-color: #D97706;
+    }
+    main {
+      padding: 2.5rem 3rem;
+      max-width: 820px;
+    }
+    section {
+      margin-bottom: 3rem;
+      scroll-margin-top: 1.5rem;
+    }
+    section h2 {
+      font-size: 1.4rem;
+      color: #D97706;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #E5E7EB;
+    }
+    section h3 {
+      font-size: 1rem;
+      color: #1F2937;
+      margin: 1.25rem 0 0.5rem;
+      font-weight: bold;
+    }
+    section p {
+      color: #4B5563;
+      margin-bottom: 0.85rem;
+    }
+    .step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #1F2937;
+      color: #D97706;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    .step-body strong {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+    .step-body p {
+      font-size: 0.85rem;
+      margin: 0;
+    }
+    .tip {
+      background: white;
+      border-left: 3px solid #D97706;
+      padding: 0.85rem 1rem;
+      border-radius: 0 4px 4px 0;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      color: #4B5563;
+    }
+    .tip strong { color: #1F2937; }
+    .conf-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .conf-card {
+      border-radius: 6px;
+      padding: 1rem;
+      border: 1px solid transparent;
+    }
+    .conf-card.high { background: #D1FAE5; border-color: #6EE7B7; }
+    .conf-card.medium { background: #FEF3C7; border-color: #FCD34D; }
+    .conf-card.low { background: #FEE2E2; border-color: #FCA5A5; }
+    .conf-card .label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+    .conf-card.high .label { color: #065F46; }
+    .conf-card.medium .label { color: #92400E; }
+    .conf-card.low .label { color: #991B1B; }
+    .conf-card p { font-size: 0.82rem; color: #4B5563; margin: 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin: 1rem 0;
+    }
+    th {
+      background: #1F2937;
+      color: #D97706;
+      padding: 0.6rem 0.85rem;
+      text-align: left;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid #E5E7EB;
+      color: #4B5563;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #F9FAFB; }
+    .req {
+      font-size: 0.68rem;
+      font-weight: bold;
+      color: #DC2626;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    code {
+      background: #E5E7EB;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      font-size: 0.85em;
+      color: #1F2937;
+    }
+    .faq-item {
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      margin-bottom: 0.6rem;
+      overflow: hidden;
+    }
+    .faq-q {
+      background: white;
+      padding: 0.85rem 1rem;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    .faq-q::after { content: '+'; color: #D97706; font-size: 1.1rem; }
+    .faq-q.open::after { content: '-'; }
+    .faq-a {
+      display: none;
+      padding: 0 1rem 0.85rem;
+      background: white;
+      font-size: 0.88rem;
+      color: #4B5563;
+      border-top: 1px solid #E5E7EB;
+      padding-top: 0.75rem;
+    }
+    .faq-a.open { display: block; }
+    footer {
+      background: #1F2937;
+      color: #6B7280;
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.82rem;
+    }
+    footer strong { color: #D97706; }
+    @media (max-width: 700px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { display: none; }
+      main { padding: 1.5rem; }
+      .conf-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Oil and Gas Run Sheet Generator</h1>
+  <p>User Guide — BOP Abstract Internal Tool</p>
+</header>
+
+<div class="layout">
+  <aside>
+    <h3>Contents</h3>
+    <a href="#overview">Overview</a>
+    <h3>Steps</h3>
+    <a href="#step1">1. Fill In Fields</a>
+    <a href="#step2">2. Upload PDFs</a>
+    <a href="#step3">3. Generate</a>
+    <a href="#step4">4. Review Results</a>
+    <a href="#step5">5. Export to Excel</a>
+    <h3>Reference</h3>
+    <a href="#confidence">Confidence Colors</a>
+    <a href="#sorting">Sorting</a>
+    <a href="#columns">Excel Columns</a>
+    <a href="#tips">Tips</a>
+    <a href="#faq">FAQ</a>
+  </aside>
+
+  <main>
+
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>The Run Sheet Generator reads scanned oil and gas deed and lease PDFs, automatically extracts legal instruments using AI, and produces a formatted Chain of Title Excel spreadsheet in a fraction of the time it would take manually.</p>
+      <p>Upload your PDFs, review and correct the extracted data, then export a ready-to-use Excel file sorted by your preferred date field.</p>
+      <div class="tip"><strong>Bulk uploads supported.</strong> You can process up to 28 or more documents at once. Each file is handled in parallel so processing time does not multiply with file count.</div>
+    </section>
+
+    <section id="step1">
+      <h2>Step 1 — Fill In the Header Fields</h2>
+      <p>Before uploading documents, complete the fields at the top of the page. These populate the header rows of your exported Excel file.</p>
+      <table>
+        <thead><tr><th>Field</th><th>Required</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Abstractor Name</strong></td><td><span class="req">Required</span></td><td><code>Jane Smith</code></td></tr>
+          <tr><td><strong>Property Description</strong></td><td><span class="req">Required</span></td><td><code>Situate on Pyles Fork...</code></td></tr>
+          <tr><td><strong>Parcel Number</strong></td><td>Optional</td><td><code>12-22-7</code></td></tr>
+          <tr><td><strong>Acreage</strong></td><td>Optional</td><td><code>16.4</code></td></tr>
+          <tr><td><strong>District</strong></td><td>Optional</td><td><code>Mannington District</code></td></tr>
+          <tr><td><strong>County</strong></td><td>Optional</td><td><code>Marion</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="step2">
+      <h2>Step 2 — Upload Your PDFs</h2>
+      <p>Click the Upload PDFs file picker and select one or more PDF files. Hold Ctrl (Windows) or Cmd (Mac) to select multiple files at once.</p>
+      <div class="tip"><strong>No size limit.</strong> Files upload directly to secure cloud storage and never pass through a size-restricted server endpoint.</div>
+      <div class="tip" style="border-left-color:#DC2626;"><strong>PDFs only.</strong> The tool only accepts .pdf files. Images and Word documents are not supported.</div>
+    </section>
+
+    <section id="step3">
+      <h2>Step 3 — Generate with Real Data</h2>
+      <p>Click Generate with Real Data. The tool will:</p>
+      <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Upload all files to secure storage</strong><p>All PDFs are uploaded in parallel to Vercel Blob cloud storage.</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Run OCR on each document</strong><p>Google Document AI reads each PDF and extracts the raw text.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Extract instruments using AI</strong><p>Claude AI identifies each recorded instrument and pulls all key fields.</p></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Display results for review</strong><p>All extracted instruments appear in the review table, color-coded by confidence level.</p></div></div>
+      <div class="tip"><strong>Demo mode:</strong> Click Generate Demo Sample to load a sample row and test the export feature without uploading any documents.</div>
+    </section>
+
+    <section id="step4">
+      <h2>Step 4 — Review and Edit Extracted Instruments</h2>
+      <p>Every extracted field is editable directly in the review table. Click into any cell and type to correct or update the value.</p>
+      <div class="step"><div class="step-num">&#9998;</div><div class="step-body"><strong>Edit any field</strong><p>Click directly into VOL/PAGE, dates, grantor, grantee, description, or comments to correct values.</p></div></div>
+      <div class="step"><div class="step-num">&#10005;</div><div class="step-body"><strong>Delete a row</strong><p>Click the Delete button on any row to remove it from the export.</p></div></div>
+      <div class="step"><div class="step-num">&#8597;</div><div class="step-body"><strong>Change sort order</strong><p>Use the Sort table by radio buttons above the table to re-order rows by Recorded Date or Doc Date.</p></div></div>
+    </section>
+
+    <section id="step5">
+      <h2>Step 5 — Export to Excel</h2>
+      <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Choose your sort order</strong><p>Select Recorded Date or Doc Date using the radio buttons above the Export button.</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click Export to Excel</strong><p>The server builds a fully formatted .xlsx file and downloads it automatically.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Open in Excel or Google Sheets</strong><p>Formatting, borders, column widths, and wrapped text are all pre-applied.</p></div></div>
+      <div class="tip"><strong>Filename format:</strong> AbstractorName_RunSheet_ParcelNumber_sortedByRecordedDate.xlsx</div>
+    </section>
+
+    <section id="confidence">
+      <h2>Confidence Color Coding</h2>
+      <p>Each row is color-coded based on how confident the AI is in its extraction. Always review low-confidence rows before exporting.</p>
+      <div class="conf-grid">
+        <div class="conf-card high"><div class="label">High</div><p>All fields extracted cleanly. Minimal review needed.</p></div>
+        <div class="conf-card medium"><div class="label">Medium</div><p>Most fields found but something was unclear. Review recommended.</p></div>
+        <div class="conf-card low"><div class="label">Low</div><p>Significant uncertainty. Always review manually before exporting.</p></div>
+      </div>
+      <div class="tip"><strong>Notes for Reviewer column:</strong> When confidence is medium or low, check this column — the AI explains exactly what it was uncertain about.</div>
+    </section>
+
+    <section id="sorting">
+      <h2>Sorting Options</h2>
+      <table>
+        <thead><tr><th>Control</th><th>Location</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sort table by</strong></td><td>Above the review table</td><td>Re-orders the on-screen table only. Does not affect the export.</td></tr>
+          <tr><td><strong>Export sorted by</strong></td><td>Above the Export button</td><td>Controls the row order in the downloaded Excel file.</td></tr>
+        </tbody>
+      </table>
+      <p>Both sort controls sort chronologically — oldest to newest. All dates are normalized to MM-DD-YYYY format.</p>
+    </section>
+
+    <section id="columns">
+      <h2>Excel Column Reference</h2>
+      <table>
+        <thead><tr><th>Col</th><th>Header</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>VOL/PAGE</td><td>Volume and page reference (e.g. DB 1094/697)</td></tr>
+          <tr><td>B</td><td>Instrument Type</td><td>Type of legal instrument (Deed, Lease, Assignment, Will, etc.)</td></tr>
+          <tr><td>C</td><td>Doc. Date</td><td>Date the document was executed — format MM-DD-YYYY</td></tr>
+          <tr><td>D</td><td>Recorded Date</td><td>Date the document was recorded — format MM-DD-YYYY</td></tr>
+          <tr><td>E</td><td>Grantor</td><td>Party conveying rights (seller, lessor, assignor)</td></tr>
+          <tr><td>F</td><td>Grantee</td><td>Party receiving rights (buyer, lessee, assignee)</td></tr>
+          <tr><td>G</td><td>Description</td><td>Brief property or interest description</td></tr>
+          <tr><td>H</td><td>Comments</td><td>Prior deed references, consideration, special terms</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="tips">
+      <h2>Tips and Best Practices</h2>
+      <h3>For best OCR results</h3>
+      <div class="tip"><strong>Higher DPI scans produce better results.</strong> Scan at 300 DPI or above when possible.</div>
+      <div class="tip"><strong>Straighten pages before scanning.</strong> Rotated or skewed pages reduce OCR accuracy on handwritten documents.</div>
+      <h3>For large batches</h3>
+      <div class="tip"><strong>Name files descriptively.</strong> The source filename appears in the review table, so names like DB_261-445.pdf make it easier to trace back to the original.</div>
+      <div class="tip"><strong>Up to 28 or more files work reliably.</strong> Files are processed in parallel so a 20-file batch takes roughly the same time as a 5-file batch.</div>
+      <h3>Reviewing results</h3>
+      <div class="tip"><strong>Always check low-confidence (pink) rows.</strong> Cross-reference against the original PDF before exporting.</div>
+      <div class="tip"><strong>A single PDF may produce multiple rows.</strong> If a deed book page contains two instruments, both will be extracted as separate rows. Delete any that are not relevant to your chain.</div>
+    </section>
+
+    <section id="faq">
+      <h2>Frequently Asked Questions</h2>
+
+      <div class="faq-item">
+        <div class="faq-q">I uploaded 10 files but got 17 rows — is that normal?</div>
+        <div class="faq-a">Yes. A single PDF can contain multiple recorded instruments. The AI extracts each one as a separate row. Review the Source column to see which file each row came from, and delete any rows that are not part of your chain of title.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">A file shows as an error — what should I do?</div>
+        <div class="faq-a">Check the error message in the Errors section. Common causes: the PDF is corrupted or password-protected, the scan is completely blank, or the file contained no readable text. Try re-scanning or opening the PDF to verify it is readable.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Can I edit the data after extracting?</div>
+        <div class="faq-a">Yes — every field in the review table is editable. Click any input, make your correction, and the change will be reflected in the export automatically.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">What is the difference between Doc Date and Recorded Date sorting?</div>
+        <div class="faq-a">Doc Date is when the instrument was signed or executed. Recorded Date is when it was filed with the county recorder. For chain of title purposes, Recorded Date is typically preferred. Both columns always appear in the export regardless of which sort you choose.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">How long does processing take?</div>
+        <div class="faq-a">Typically 10 to 30 seconds per file, but since files are processed in parallel, a batch of 20 files takes about the same time as a batch of 5.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">Is my data stored anywhere?</div>
+        <div class="faq-a">PDFs are temporarily stored in Vercel Blob storage during processing only. They are not retained long-term. Extracted data exists only in your browser session — nothing is saved to a database.</div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <strong>BOP Abstract</strong> &nbsp;·&nbsp; Oil and Gas Run Sheet Generator &nbsp;·&nbsp; Internal Use Only
+</footer>
+
+<script>
+  document.querySelectorAll('.faq-q').forEach(function(q) {
+    q.addEventListener('click', function() {
+      q.classList.toggle('open');
+      q.nextElementSibling.classList.toggle('open');
+    });
+  });
+</script>
+
+</body>
+</html>
