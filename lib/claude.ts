@@ -14,7 +14,6 @@ export interface ExtractedInstrument {
 }
 
 let cachedClient: Anthropic | null = null;
-
 function getClient(): Anthropic {
   if (cachedClient) return cachedClient;
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -28,29 +27,60 @@ export async function extractInstruments(
   filename: string
 ): Promise<ExtractedInstrument[]> {
   const client = getClient();
-
   const message = await client.messages.create({
     model: 'claude-opus-4-5',
     max_tokens: 4096,
     messages: [
       {
         role: 'user',
-        content: `You are an expert oil and gas title abstractor. Extract all legal instruments from the following OCR text from "${filename}". The text may be from old scanned documents and may contain dots, ellipses, or OCR artifacts — do your best to extract what you can.
+        content: `You are an expert oil and gas title abstractor preparing a chain of title run sheet. Extract all PRIMARY legal instruments from the OCR text of "${filename}".
 
-For each instrument found, return a JSON array of objects with these exact fields:
-- vol_page: volume and page reference (e.g. "DB 1094/697" or "BOOK 338 PAGE 317")
-- instrument_type: type of instrument (e.g. "Oil and Gas Lease", "Deed", "Assignment")
-- doc_date: date the document was executed, or empty string if not found
-- recorded_date: date recorded, or empty string if not found  
-- grantor: the grantor(s) - the party conveying rights
-- grantee: the grantee(s) - the party receiving rights
-- description: brief description of property or interest conveyed
-- comments: any other notable details, prior references, consideration amount
-- confidence: "high", "medium", or "low"
-- notes_for_reviewer: any concerns or ambiguities
+CRITICAL RULES — follow these exactly:
 
-If you find at least one instrument, return it even if some fields are empty strings.
-Return ONLY a valid JSON array, no other text.
+1. ONLY extract the PRIMARY instrument on the page. Do NOT create separate entries for instruments mentioned in "Prior References", "Prior Deeds", "see also", or "referenced herein". Those are citations only.
+
+2. INSTRUMENT TYPE must be fully specific. Never just write "Deed". Always write the full type:
+   - "General Warranty Deed"
+   - "Special Warranty Deed"
+   - "Quitclaim Deed"
+   - "Trustee's Deed"
+   - "Executor's Deed"
+   - "Oil and Gas Lease"
+   - "Assignment of Oil and Gas Lease"
+   - "Will" / "Last Will and Testament"
+   - "Release of Lien"
+   - etc.
+   If the deed type is not stated, write "Deed (type unstated)".
+
+3. DESCRIPTION field: Describe the property conveyed in neutral, standardized language. Always use:
+   - "Excepting and Reserving" (never "Saving and Excepting" or "Reserving and Excepting")
+   - "more or less" (never "more-or-less" or "M/L")
+   - "situate" (never "situated" or "lying")
+   - "bounded and described as follows" for metes and bounds references
+
+4. COMMENTS field: Include prior deed references, consideration, exceptions, and reservations. Always use:
+   - "Excepting and Reserving" (standardized)
+   - "Prior Reference:" to introduce prior deed citations
+   - "Subject to:" for easements and restrictions
+
+5. If a field cannot be determined from the text, return an empty string. Never guess or fabricate.
+
+6. CONFIDENCE scoring:
+   - "high" = all fields clearly readable, typed document
+   - "medium" = most fields readable, some ambiguity
+   - "low" = handwritten, heavily degraded, or significant fields missing
+
+Return ONLY a valid JSON array of objects with these exact fields:
+- vol_page
+- instrument_type
+- doc_date
+- recorded_date
+- grantor
+- grantee
+- description
+- comments
+- confidence
+- notes_for_reviewer
 
 OCR TEXT:
 ${ocrText}`,
