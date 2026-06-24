@@ -26,24 +26,58 @@ interface ExtractError {
 function parseDate(dateStr: string): Date {
   if (!dateStr) return new Date(0);
   const cleaned = dateStr.trim();
+  // Try MM-DD-YYYY or MM/DD/YYYY first
+  const parts = cleaned.split(/[-\/]/);
+  if (parts.length === 3) {
+    const month = parseInt(parts[0]);
+    const day = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+    if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+      return new Date(year, month - 1, day);
+    }
+  }
+  // Try natural language date
   const d = new Date(cleaned);
   if (!isNaN(d.getTime())) return d;
-  const parts = cleaned.split('/');
-  if (parts.length === 3) {
-    return new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
-  }
   return new Date(0);
 }
 
 function formatDate(dateStr: string): string {
   if (!dateStr || dateStr.trim() === '') return '';
-  const d = parseDate(dateStr);
-  if (!d || d.getTime() === new Date(0).getTime()) return dateStr;
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  if (yyyy < 1600 || yyyy > 2100) return dateStr;
-  return `${mm}-${dd}-${yyyy}`;
+  const cleaned = dateStr.trim();
+  // Parse without timezone shift
+  const parts = cleaned.split(/[-\/]/);
+  if (parts.length === 3) {
+    const a = parseInt(parts[0]);
+    const b = parseInt(parts[1]);
+    const c = parseInt(parts[2]);
+    if (!isNaN(a) && !isNaN(b) && !isNaN(c)) {
+      // Determine if format is YYYY-MM-DD or MM-DD-YYYY
+      if (a > 1000) {
+        // YYYY-MM-DD
+        const mm = String(b).padStart(2, '0');
+        const dd = String(c).padStart(2, '0');
+        if (a < 1600 || a > 2100) return cleaned;
+        return `${mm}-${dd}-${a}`;
+      } else {
+        // MM-DD-YYYY or MM/DD/YYYY
+        const mm = String(a).padStart(2, '0');
+        const dd = String(b).padStart(2, '0');
+        if (c < 1600 || c > 2100) return cleaned;
+        return `${mm}-${dd}-${c}`;
+      }
+    }
+  }
+  // Try natural language (e.g. "May 13, 1997")
+  const d = new Date(cleaned);
+  if (!isNaN(d.getTime())) {
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    if (yyyy < 1600 || yyyy > 2100) return cleaned;
+    return `${mm}-${dd}-${yyyy}`;
+  }
+  return cleaned;
 }
 
 export default function Home() {
@@ -57,6 +91,8 @@ export default function Home() {
   const [acreage, setAcreage] = useState('');
   const [district, setDistrict] = useState('');
   const [county, setCounty] = useState('');
+  const [state, setState] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [files, setFiles] = useState<FileList | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -97,6 +133,7 @@ export default function Home() {
     if (!acreage) { showStatus('Please fill in Acreage', 'error'); return; }
     if (!district) { showStatus('Please fill in District', 'error'); return; }
     if (!county) { showStatus('Please fill in County', 'error'); return; }
+    if (!state) { showStatus('Please fill in State', 'error'); return; }
     if (!files || files.length === 0) { showStatus('Please upload at least one PDF file', 'error'); return; }
 
     setIsProcessing(true);
@@ -210,6 +247,8 @@ export default function Home() {
           acreage,
           district,
           county,
+          state,
+          dueDate,
           sortField,
           sortDirection,
           rows: sorted,
@@ -287,7 +326,7 @@ export default function Home() {
       </div>
       <div className="form-group">
         <label>{'Surface Owner *'}</label>
-        <input type="text" value={surfaceOwner} onChange={(e) => setSurfaceOwner(e.target.value)} placeholder="e.g., Coastal Forest Resources Company" />
+        <input type="text" value={surfaceOwner} onChange={(e) => setSurfaceOwner(e.target.value)} placeholder="e.g., Morrow, Sandra L." />
       </div>
       <div className="form-group">
         <label>{'Property Description *'}</label>
@@ -295,19 +334,27 @@ export default function Home() {
       </div>
       <div className="form-group">
         <label>{'Parcel Number *'}</label>
-        <input type="text" value={parcelNumber} onChange={(e) => setParcelNumber(e.target.value)} placeholder="e.g., 12-22-7" />
+        <input type="text" value={parcelNumber} onChange={(e) => setParcelNumber(e.target.value)} placeholder="e.g., 970-D-262" />
       </div>
       <div className="form-group">
         <label>{'Acreage *'}</label>
-        <input type="text" value={acreage} onChange={(e) => setAcreage(e.target.value)} placeholder="e.g., 16.4" />
+        <input type="text" value={acreage} onChange={(e) => setAcreage(e.target.value)} placeholder="e.g., 3.529" />
       </div>
       <div className="form-group">
-        <label>{'District *'}</label>
-        <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="e.g., Mannington District" />
+        <label>{'District / Borough / Township *'}</label>
+        <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} placeholder="e.g., Plum Borough" />
       </div>
       <div className="form-group">
         <label>{'County *'}</label>
-        <input type="text" value={county} onChange={(e) => setCounty(e.target.value)} placeholder="e.g., Marion" />
+        <input type="text" value={county} onChange={(e) => setCounty(e.target.value)} placeholder="e.g., Allegheny" />
+      </div>
+      <div className="form-group">
+        <label>{'State *'}</label>
+        <input type="text" value={state} onChange={(e) => setState(e.target.value)} placeholder="e.g., Pennsylvania" />
+      </div>
+      <div className="form-group">
+        <label>{'Due Date'}</label>
+        <input type="text" value={dueDate} onChange={(e) => setDueDate(e.target.value)} placeholder="e.g., N/A or 12/31/2026" />
       </div>
       <div className="form-group">
         <label>{'Upload PDFs *'}</label>
