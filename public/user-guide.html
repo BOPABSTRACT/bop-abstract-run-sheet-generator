@@ -262,6 +262,7 @@
     <a href="#confidence">Confidence Colors</a>
     <a href="#sorting">Sorting</a>
     <a href="#columns">Excel Columns</a>
+    <a href="#standardized">Standardized Language</a>
     <a href="#tips">Tips</a>
     <a href="#faq">FAQ</a>
   </aside>
@@ -271,24 +272,27 @@
     <section id="overview">
       <h2>Overview</h2>
       <p>The Run Sheet Generator reads scanned oil and gas deed and lease PDFs, automatically extracts legal instruments using AI, and produces a formatted Chain of Title Excel spreadsheet in a fraction of the time it would take manually.</p>
-      <p>Upload your PDFs, review and correct the extracted data, then export a ready-to-use Excel file sorted by your preferred date field.</p>
+      <p>Upload your PDFs, review and correct the extracted data, then export a ready-to-use Excel file sorted by your preferred date field and order.</p>
       <div class="tip"><strong>Bulk uploads supported.</strong> You can process up to 28 or more documents at once. Each file is handled in parallel so processing time does not multiply with file count.</div>
+      <div class="tip"><strong>Always review before exporting.</strong> The AI is a first-pass tool. Legal descriptions, handwritten documents, and complex instruments will require manual correction.</div>
     </section>
 
     <section id="step1">
       <h2>Step 1 — Fill In the Header Fields</h2>
       <p>All fields are required before you can generate a run sheet. These populate the header rows of your exported Excel file.</p>
       <table>
-        <thead><tr><th>Field</th><th>Required</th><th>Example</th></tr></thead>
+        <thead><tr><th>Field</th><th>Required</th><th>Description</th><th>Example</th></tr></thead>
         <tbody>
-          <tr><td><strong>Abstractor Name</strong></td><td><span class="req">Required</span></td><td><code>Jane Smith</code></td></tr>
-          <tr><td><strong>Property Description</strong></td><td><span class="req">Required</span></td><td><code>Situate on Pyles Fork...</code></td></tr>
-          <tr><td><strong>Parcel Number</strong></td><td><span class="req">Required</span></td><td><code>12-22-7</code></td></tr>
-          <tr><td><strong>Acreage</strong></td><td><span class="req">Required</span></td><td><code>16.4</code></td></tr>
-          <tr><td><strong>District</strong></td><td><span class="req">Required</span></td><td><code>Mannington District</code></td></tr>
-          <tr><td><strong>County</strong></td><td><span class="req">Required</span></td><td><code>Marion</code></td></tr>
+          <tr><td><strong>Abstractor Name</strong></td><td><span class="req">Required</span></td><td>Your name — appears in Row 2 of the Excel</td><td><code>Jane Smith</code></td></tr>
+          <tr><td><strong>Surface Owner</strong></td><td><span class="req">Required</span></td><td>Current surface owner or company — appears in the title row of the Excel</td><td><code>Coastal Forest Resources Company</code></td></tr>
+          <tr><td><strong>Property Description</strong></td><td><span class="req">Required</span></td><td>Brief location description starting with "situate on..."</td><td><code>situate on the waters of Owen Davy Fork of Buffalo Creek</code></td></tr>
+          <tr><td><strong>Parcel Number</strong></td><td><span class="req">Required</span></td><td>Current parcel number(s)</td><td><code>12-50-26</code></td></tr>
+          <tr><td><strong>Acreage</strong></td><td><span class="req">Required</span></td><td>Current acreage of the parcel</td><td><code>46.92</code></td></tr>
+          <tr><td><strong>District</strong></td><td><span class="req">Required</span></td><td>Township or district name</td><td><code>Mannington District</code></td></tr>
+          <tr><td><strong>County</strong></td><td><span class="req">Required</span></td><td>County where the property is located</td><td><code>Marion</code></td></tr>
         </tbody>
       </table>
+      <div class="tip"><strong>Surface Owner vs. Abstractor Name:</strong> The Surface Owner is the current landowner or company whose property is being abstracted. The Abstractor Name is your own name as the person preparing the run sheet.</div>
     </section>
 
     <section id="step2">
@@ -296,84 +300,117 @@
       <p>Click the Upload PDFs file picker and select one or more PDF files. Hold Ctrl (Windows) or Cmd (Mac) to select multiple files at once.</p>
       <div class="tip"><strong>No size limit.</strong> Files upload directly to secure cloud storage and never pass through a size-restricted server endpoint.</div>
       <div class="tip" style="border-left-color:#DC2626;"><strong>PDFs only.</strong> The tool only accepts .pdf files. Images and Word documents are not supported.</div>
+      <div class="tip"><strong>Name files descriptively.</strong> The source filename appears in the review table, so names like <code>DB_261-445.pdf</code> make it easier to trace back to the original document.</div>
     </section>
 
     <section id="step3">
       <h2>Step 3 — Generate with Real Data</h2>
       <p>Click Generate with Real Data. The tool will:</p>
       <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Upload all files to secure storage</strong><p>All PDFs are uploaded in parallel to Vercel Blob cloud storage.</p></div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Run OCR on each document</strong><p>Google Document AI reads each PDF and extracts the raw text.</p></div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Extract instruments using AI</strong><p>Claude AI identifies each recorded instrument and pulls all key fields.</p></div></div>
-      <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Display results for review</strong><p>All extracted instruments appear in the review table, color-coded by confidence level.</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Run OCR on each document</strong><p>Google Document AI reads each PDF and extracts the raw text, including typed and printed content.</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Extract instruments using AI</strong><p>Claude AI identifies each primary recorded instrument and pulls all key fields. Prior references cited within a document are not extracted as separate instruments.</p></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body"><strong>Display results for review</strong><p>All extracted instruments appear in the review table sorted newest first by default, color-coded by confidence level.</p></div></div>
     </section>
 
     <section id="step4">
       <h2>Step 4 — Review and Edit Extracted Instruments</h2>
-      <p>Every extracted field is editable directly in the review table. Click into any cell and type to correct or update the value.</p>
-      <div class="step"><div class="step-num">&#9998;</div><div class="step-body"><strong>Edit any field</strong><p>Click directly into VOL/PAGE, dates, grantor, grantee, description, or comments to correct values.</p></div></div>
-      <div class="step"><div class="step-num">&#10005;</div><div class="step-body"><strong>Delete a row</strong><p>Click the Delete button on any row to remove it from the export.</p></div></div>
-      <div class="step"><div class="step-num">&#8597;</div><div class="step-body"><strong>Change sort order</strong><p>Use the Sort table by radio buttons above the table to re-order rows by Recorded Date or Doc Date.</p></div></div>
+      <p>Every extracted field is editable directly in the review table. The Grantor, Grantee, Description, Comments, and Notes fields are expandable text boxes — drag the bottom edge to resize, or simply type and the box will grow.</p>
+      <div class="step"><div class="step-num">&#9998;</div><div class="step-body"><strong>Edit any field</strong><p>Click directly into any cell to correct values. Text boxes for longer fields can be resized by dragging.</p></div></div>
+      <div class="step"><div class="step-num">&#10005;</div><div class="step-body"><strong>Delete a row</strong><p>Click the Delete button on any row to remove it from the export. Use this to remove prior references that were incorrectly extracted as separate instruments.</p></div></div>
+      <div class="step"><div class="step-num">&#8597;</div><div class="step-body"><strong>Change sort order</strong><p>Use the Sort table by and Newest First / Oldest First radio buttons to re-order rows. Default is newest first.</p></div></div>
+      <div class="tip"><strong>Low confidence rows (red) always need review.</strong> Check the Notes for Reviewer column for exactly what the AI flagged. Cross-reference against the original PDF before exporting.</div>
+      <div class="tip"><strong>Legal descriptions will often need correction.</strong> Complex metes and bounds descriptions, acreage calculations, and exception language should always be verified against the source document.</div>
+      <div class="tip"><strong>Older handwritten documents require more editing.</strong> OCR accuracy on handwriting is limited. Treat handwritten document extractions as a starting point only.</div>
     </section>
 
     <section id="step5">
       <h2>Step 5 — Export to Excel</h2>
-      <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Choose your sort order</strong><p>Select Recorded Date or Doc Date using the radio buttons above the Export button.</p></div></div>
+      <div class="step"><div class="step-num">1</div><div class="step-body"><strong>Choose your sort field and direction</strong><p>Select Recorded Date or Doc Date, then Newest First or Oldest First using the radio buttons above the Export button.</p></div></div>
       <div class="step"><div class="step-num">2</div><div class="step-body"><strong>Click Export to Excel</strong><p>The server builds a fully formatted .xlsx file and downloads it automatically.</p></div></div>
       <div class="step"><div class="step-num">3</div><div class="step-body"><strong>Open in Excel or Google Sheets</strong><p>Formatting, borders, column widths, and wrapped text are all pre-applied.</p></div></div>
-      <div class="tip"><strong>Filename format:</strong> AbstractorName_RunSheet_ParcelNumber_sortedByRecordedDate.xlsx</div>
+      <div class="tip"><strong>Filename format:</strong> AbstractorName_RunSheet_ParcelNumber.xlsx</div>
     </section>
 
     <section id="confidence">
       <h2>Confidence Color Coding</h2>
       <p>Each row is color-coded based on how confident the AI is in its extraction. Always review low-confidence rows before exporting.</p>
       <div class="conf-grid">
-        <div class="conf-card high"><div class="label">High</div><p>All fields extracted cleanly. Minimal review needed.</p></div>
-        <div class="conf-card medium"><div class="label">Medium</div><p>Most fields found but something was unclear. Review recommended.</p></div>
-        <div class="conf-card low"><div class="label">Low</div><p>Significant uncertainty. Always review manually before exporting.</p></div>
+        <div class="conf-card high"><div class="label">High</div><p>All fields extracted cleanly from a clear, typed document. Minimal review needed.</p></div>
+        <div class="conf-card medium"><div class="label">Medium</div><p>Most fields found but something was unclear — fuzzy scan, ambiguous date, or partial name. Review recommended.</p></div>
+        <div class="conf-card low"><div class="label">Low</div><p>Significant uncertainty — handwriting, heavy degradation, or missing fields. Always review manually before exporting.</p></div>
       </div>
-      <div class="tip"><strong>Notes for Reviewer column:</strong> When confidence is medium or low, check this column — the AI explains exactly what it was uncertain about.</div>
+      <div class="tip"><strong>Notes for Reviewer column:</strong> When confidence is medium or low, this column explains exactly what the AI was uncertain about.</div>
     </section>
 
     <section id="sorting">
       <h2>Sorting Options</h2>
+      <p>There are two independent sort controls — one for the on-screen review table and one for the exported Excel file.</p>
       <table>
         <thead><tr><th>Control</th><th>Location</th><th>Effect</th></tr></thead>
         <tbody>
           <tr><td><strong>Sort table by</strong></td><td>Above the review table</td><td>Re-orders the on-screen table only. Does not affect the export.</td></tr>
-          <tr><td><strong>Export sorted by</strong></td><td>Above the Export button</td><td>Controls the row order in the downloaded Excel file.</td></tr>
+          <tr><td><strong>Newest / Oldest First</strong></td><td>Above the review table</td><td>Sets ascending or descending order for the table view.</td></tr>
+          <tr><td><strong>Export sorted by</strong></td><td>Above the Export button</td><td>Controls the date field used to sort the Excel file.</td></tr>
+          <tr><td><strong>Newest / Oldest First</strong></td><td>Above the Export button</td><td>Sets ascending or descending order for the Excel export.</td></tr>
         </tbody>
       </table>
-      <p>Both sort controls sort chronologically — oldest to newest. All dates are normalized to MM-DD-YYYY format.</p>
+      <div class="tip"><strong>Default is Newest First.</strong> Atencio Hall and most BOP Abstract run sheets use reverse chronological order. Change to Oldest First if your format requires it.</div>
     </section>
 
     <section id="columns">
       <h2>Excel Column Reference</h2>
+      <p>The exported spreadsheet has a 4-row header block followed by data rows across 7 columns.</p>
+      <table>
+        <thead><tr><th>Row</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td>Row 1</td><td>RUN SHEET - [Surface Owner] - CHAIN OF TITLE</td></tr>
+          <tr><td>Row 2</td><td>Abstractor Name (left) / Due Date (right)</td></tr>
+          <tr><td>Row 3</td><td>Acreage, property description, parcel number, district, county, state</td></tr>
+          <tr><td>Row 4</td><td>Yellow column headers</td></tr>
+        </tbody>
+      </table>
       <table>
         <thead><tr><th>Col</th><th>Header</th><th>Contents</th></tr></thead>
         <tbody>
           <tr><td>A</td><td>VOL/PAGE</td><td>Volume and page reference (e.g. DB 1094/697)</td></tr>
-          <tr><td>B</td><td>Instrument Type</td><td>Type of legal instrument (Deed, Lease, Assignment, Will, etc.)</td></tr>
-          <tr><td>C</td><td>Doc. Date</td><td>Date the document was executed — format MM-DD-YYYY</td></tr>
-          <tr><td>D</td><td>Recorded Date</td><td>Date the document was recorded — format MM-DD-YYYY</td></tr>
-          <tr><td>E</td><td>Grantor</td><td>Party conveying rights (seller, lessor, assignor)</td></tr>
-          <tr><td>F</td><td>Grantee</td><td>Party receiving rights (buyer, lessee, assignee)</td></tr>
-          <tr><td>G</td><td>Description</td><td>Brief property or interest description</td></tr>
-          <tr><td>H</td><td>Comments</td><td>Prior deed references, consideration, special terms</td></tr>
+          <tr><td>B</td><td>Instrument Type</td><td>Full instrument type (e.g. General Warranty Deed, Special Warranty Deed, Oil and Gas Lease)</td></tr>
+          <tr><td>C</td><td>Doc. Date / Recorded Date</td><td>Both dates stacked in one cell — Doc Date on top, Recorded Date below</td></tr>
+          <tr><td>D</td><td>Grantor</td><td>Party conveying rights (seller, lessor, assignor)</td></tr>
+          <tr><td>E</td><td>Grantee</td><td>Party receiving rights (buyer, lessee, assignee)</td></tr>
+          <tr><td>F</td><td>Description</td><td>Standardized property or interest description</td></tr>
+          <tr><td>G</td><td>Comments</td><td>Prior references, consideration, exceptions, reservations</td></tr>
         </tbody>
       </table>
+    </section>
+
+    <section id="standardized">
+      <h2>Standardized Language</h2>
+      <p>The AI is instructed to use consistent terminology throughout the Description and Comments columns. If you see non-standard language in a row, correct it manually before exporting.</p>
+      <table>
+        <thead><tr><th>Always Use</th><th>Never Use</th></tr></thead>
+        <tbody>
+          <tr><td><code>Excepting and Reserving</code></td><td>Saving and Excepting, Reserving and Excepting, Subject to and Excepting</td></tr>
+          <tr><td><code>more or less</code></td><td>more-or-less, M/L, +/-</td></tr>
+          <tr><td><code>situate</code></td><td>situated, lying, located</td></tr>
+          <tr><td><code>Prior Reference:</code></td><td>See also, Prior deed, Previously recorded as</td></tr>
+          <tr><td><code>Subject to:</code></td><td>Together with, Subject to and conditioned upon</td></tr>
+        </tbody>
+      </table>
+      <div class="tip"><strong>The AI will not always get this right.</strong> Especially on older or degraded documents, non-standard language may slip through. Always proofread the Description and Comments columns before exporting.</div>
     </section>
 
     <section id="tips">
       <h2>Tips and Best Practices</h2>
       <h3>For best OCR results</h3>
       <div class="tip"><strong>Higher DPI scans produce better results.</strong> Scan at 300 DPI or above when possible.</div>
-      <div class="tip"><strong>Straighten pages before scanning.</strong> Rotated or skewed pages reduce OCR accuracy on handwritten documents.</div>
-      <h3>For large batches</h3>
-      <div class="tip"><strong>Name files descriptively.</strong> The source filename appears in the review table, so names like DB_261-445.pdf make it easier to trace back to the original.</div>
-      <div class="tip"><strong>Up to 28 or more files work reliably.</strong> Files are processed in parallel so a 20-file batch takes roughly the same time as a 5-file batch.</div>
-      <h3>Reviewing results</h3>
-      <div class="tip"><strong>Always check low-confidence (pink) rows.</strong> Cross-reference against the original PDF before exporting.</div>
-      <div class="tip"><strong>A single PDF may produce multiple rows.</strong> If a deed book page contains two instruments, both will be extracted as separate rows. Delete any that are not relevant to your chain.</div>
+      <div class="tip"><strong>Straighten pages before scanning.</strong> Rotated or skewed pages reduce OCR accuracy, especially on handwritten documents.</div>
+      <h3>What the AI does well</h3>
+      <div class="tip"><strong>Typed instruments from the 1950s onward</strong> extract reliably with high confidence in most cases.</div>
+      <div class="tip"><strong>Standard deed language</strong> — grantor, grantee, volume/page, and recorded date — is almost always captured correctly on clear scans.</div>
+      <h3>What the AI struggles with</h3>
+      <div class="tip"><strong>Legal descriptions</strong> are frequently incomplete or inaccurate. Always verify against the source document before exporting.</div>
+      <div class="tip"><strong>Handwritten documents</strong> require significant manual correction. OCR on cursive handwriting has inherent limitations.</div>
+      <div class="tip"><strong>Complex exception and reservation language</strong> may be paraphrased rather than precisely recited. Verify any Excepting and Reserving language carefully.</div>
     </section>
 
     <section id="faq">
@@ -381,7 +418,22 @@
 
       <div class="faq-item">
         <div class="faq-q">I uploaded 10 files but got 17 rows — is that normal?</div>
-        <div class="faq-a">Yes. A single PDF can contain multiple recorded instruments. The AI extracts each one as a separate row. Review the Source column to see which file each row came from, and delete any rows that are not part of your chain of title.</div>
+        <div class="faq-a">Yes. A single PDF can contain multiple recorded instruments. The AI extracts each primary instrument as a separate row. Review the Source column to see which file each row came from, and delete any rows that are not part of your chain of title. Prior references cited within a document should not appear as separate rows — if they do, delete them.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">The instrument type just says "Deed" — how do I fix it?</div>
+        <div class="faq-a">The AI is instructed to always specify the full deed type (General Warranty Deed, Special Warranty Deed, etc.). If it returns just "Deed", the deed type was likely not stated in the document, or the scan was unclear. Check the source document and correct manually in the review table.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">A prior reference was extracted as its own row — what do I do?</div>
+        <div class="faq-a">Click Delete on that row. Prior references cited within an instrument (e.g. "see DB 526/25") are not separate instruments and should not appear in the chain of title. The AI is instructed to ignore them, but may occasionally include them on complex documents.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">The legal description is wrong or incomplete — what should I do?</div>
+        <div class="faq-a">Edit it directly in the Description text box in the review table before exporting. Legal descriptions are one of the most difficult things for AI to extract accurately, especially on older documents with complex metes and bounds. Always verify against the source PDF.</div>
       </div>
 
       <div class="faq-item">
@@ -390,23 +442,18 @@
       </div>
 
       <div class="faq-item">
-        <div class="faq-q">Can I edit the data after extracting?</div>
-        <div class="faq-a">Yes — every field in the review table is editable. Click any input, make your correction, and the change will be reflected in the export automatically.</div>
-      </div>
-
-      <div class="faq-item">
         <div class="faq-q">What is the difference between Doc Date and Recorded Date sorting?</div>
-        <div class="faq-a">Doc Date is when the instrument was signed or executed. Recorded Date is when it was filed with the county recorder. For chain of title purposes, Recorded Date is typically preferred. Both columns always appear in the export regardless of which sort you choose.</div>
+        <div class="faq-a">Doc Date is when the instrument was signed or executed. Recorded Date is when it was filed with the county recorder. Both dates always appear in the export regardless of which sort field you choose. Recorded Date is the standard for most chain of title run sheets.</div>
       </div>
 
       <div class="faq-item">
         <div class="faq-q">How long does processing take?</div>
-        <div class="faq-a">Typically 10 to 30 seconds per file, but since files are processed in parallel, a batch of 20 files takes about the same time as a batch of 5.</div>
+        <div class="faq-a">Typically 10 to 30 seconds per file. Since files are processed in parallel, a batch of 20 files takes about the same time as a batch of 5. Very long or heavily degraded PDFs may take longer.</div>
       </div>
 
       <div class="faq-item">
         <div class="faq-q">Is my data stored anywhere?</div>
-        <div class="faq-a">PDFs are temporarily stored in Vercel Blob storage during processing only. They are not retained long-term. Extracted data exists only in your browser session — nothing is saved to a database.</div>
+        <div class="faq-a">PDFs are temporarily stored in Vercel Blob storage during processing only. They are not retained long-term. Extracted data exists only in your browser session — nothing is saved to a database. Closing or refreshing the page will clear all extracted data.</div>
       </div>
 
     </section>
