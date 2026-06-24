@@ -105,6 +105,7 @@ export default function RootLayout({
             padding: 8px;
             text-align: left;
             font-weight: bold;
+            white-space: nowrap;
           }
           .results-table td {
             border: 1px solid #D1D5DB;
@@ -123,10 +124,22 @@ export default function RootLayout({
             background: #FEF3C7;
             outline: 1px solid #D97706;
           }
-          .conf-high { background: #D1FAE5; }
-          .conf-medium { background: #FEF3C7; }
-          .conf-low { background: #FEE2E2; }
-          .btn-small {
+          .results-table textarea {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-size: 12px;
+            padding: 4px;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+            min-height: 60px;
+          }
+          .results-table textarea:focus {
+            background: #FEF3C7;
+            outline: 1px solid #D97706;
+          }
+          .results-table button {
+            flex: none;
             padding: 4px 8px;
             font-size: 11px;
             background: #DC2626;
@@ -134,7 +147,13 @@ export default function RootLayout({
             border: none;
             border-radius: 3px;
             cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
           }
+          .results-table button:hover { background: #B91C1C; }
+          .conf-high { background: #D1FAE5; }
+          .conf-medium { background: #FEF3C7; }
+          .conf-low { background: #FEE2E2; }
           .progress-bar-container {
             margin-top: 15px;
             background: #E5E7EB;
