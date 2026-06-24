@@ -70,7 +70,9 @@ CRITICAL RULES — follow these exactly:
    - "medium" = most fields readable, some ambiguity
    - "low" = handwritten, heavily degraded, or significant fields missing
 
-Return ONLY a valid JSON array of objects with these exact fields:
+7. You MUST return ONLY a valid JSON array. No explanation, no markdown, no code fences, no preamble. Just the raw JSON array starting with [ and ending with ].
+
+Return a JSON array of objects with these exact fields:
 - vol_page
 - instrument_type
 - doc_date
@@ -82,6 +84,8 @@ Return ONLY a valid JSON array of objects with these exact fields:
 - confidence
 - notes_for_reviewer
 
+If no primary instruments are found, return an empty array: []
+
 OCR TEXT:
 ${ocrText}`,
       },
@@ -90,6 +94,18 @@ ${ocrText}`,
 
   const content = message.content[0];
   if (content.type !== 'text') return [];
+
   const clean = content.text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean) as ExtractedInstrument[];
+
+  try {
+    const parsed = JSON.parse(clean);
+    if (!Array.isArray(parsed)) {
+      console.error('Claude did not return an array:', clean.slice(0, 200));
+      return [];
+    }
+    return parsed as ExtractedInstrument[];
+  } catch (e) {
+    console.error('Claude JSON parse failed:', clean.slice(0, 200));
+    return [];
+  }
 }
