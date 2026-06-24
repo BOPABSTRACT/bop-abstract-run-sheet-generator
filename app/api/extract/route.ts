@@ -9,20 +9,27 @@ interface ExtractedRow extends ExtractedInstrument {
   source_file: string;
 }
 
-// Normalize VOL/PAGE to standard format: DB XXXX/XXX
+// Normalize VOL/PAGE to standard format: XX XXXX/XXX
+// Preserves county-specific book prefixes (RB, DB, OB, etc.)
+// Handles: "DB 9968-415", "RB 546-3626", "D.B.V. 3616, Page 534",
+//          "3132-571", "Deed Book 9968, page 415", "Record Book 546, Page 3626"
 function normalizeVolPage(raw: string): string {
   if (!raw || raw.trim() === '') return raw;
   const s = raw.trim();
 
-  // Already correct format e.g. "DB 9968/415"
+  // Already correct format e.g. "DB 9968/415" or "RB 546/3626"
   if (/^[A-Z]{1,3}\s+\d+\/\d+$/.test(s)) return s;
 
-  // Extract prefix (DB, OB, MB, etc.) if present
+  // Extract prefix if present — preserve county-specific prefixes
+  // RB = Record Book (Greene County PA and others)
+  // DB = Deed Book, OB = Official Book, OR = Official Records
+  // MB = Miscellaneous Book, WB = Will Book, LB = Lease Book
+  // MR = Miscellaneous Records, DR = Deed Records
   let prefix = 'DB';
   const prefixMatch = s.match(/^([A-Za-z\.]+)\s*V?\s*/i);
   if (prefixMatch) {
     const raw_prefix = prefixMatch[1].replace(/\./g, '').replace(/V$/i, '').toUpperCase();
-    if (['DB', 'OB', 'MB', 'WB', 'LB'].includes(raw_prefix)) {
+    if (['DB', 'RB', 'OB', 'OR', 'MB', 'WB', 'LB', 'MR', 'DR'].includes(raw_prefix)) {
       prefix = raw_prefix;
     }
   }
@@ -31,6 +38,7 @@ function normalizeVolPage(raw: string): string {
   const nums = s.match(/\d+/g);
   if (!nums || nums.length < 2) return s;
 
+  // Last two numbers are volume and page
   const vol  = nums[nums.length - 2];
   const page = nums[nums.length - 1];
 
