@@ -51,6 +51,7 @@ export default function Home() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [abstractorName, setAbstractorName] = useState('');
+  const [surfaceOwner, setSurfaceOwner] = useState('');
   const [propertyDescription, setPropertyDescription] = useState('');
   const [parcelNumber, setParcelNumber] = useState('');
   const [acreage, setAcreage] = useState('');
@@ -90,6 +91,7 @@ export default function Home() {
 
   async function generateWithAPI() {
     if (!abstractorName) { showStatus('Please fill in Abstractor Name', 'error'); return; }
+    if (!surfaceOwner) { showStatus('Please fill in Surface Owner', 'error'); return; }
     if (!propertyDescription) { showStatus('Please fill in Property Description', 'error'); return; }
     if (!parcelNumber) { showStatus('Please fill in Parcel Number', 'error'); return; }
     if (!acreage) { showStatus('Please fill in Acreage', 'error'); return; }
@@ -200,7 +202,18 @@ export default function Home() {
       const res = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ abstractorName, propertyDescription, parcelNumber, acreage, district, county, sortField, sortDirection, rows: sorted }),
+        body: JSON.stringify({
+          abstractorName,
+          surfaceOwner,
+          propertyDescription,
+          parcelNumber,
+          acreage,
+          district,
+          county,
+          sortField,
+          sortDirection,
+          rows: sorted,
+        }),
       });
       if (!res.ok) {
         const errText = await res.text();
@@ -273,8 +286,12 @@ export default function Home() {
         <input type="text" value={abstractorName} onChange={(e) => setAbstractorName(e.target.value)} placeholder="Enter your name" />
       </div>
       <div className="form-group">
+        <label>{'Surface Owner *'}</label>
+        <input type="text" value={surfaceOwner} onChange={(e) => setSurfaceOwner(e.target.value)} placeholder="e.g., Coastal Forest Resources Company" />
+      </div>
+      <div className="form-group">
         <label>{'Property Description *'}</label>
-        <textarea value={propertyDescription} onChange={(e) => setPropertyDescription(e.target.value)} placeholder="Enter property description" />
+        <textarea value={propertyDescription} onChange={(e) => setPropertyDescription(e.target.value)} placeholder="e.g., situate on the waters of Owen Davy Fork of Buffalo Creek" />
       </div>
       <div className="form-group">
         <label>{'Parcel Number *'}</label>
