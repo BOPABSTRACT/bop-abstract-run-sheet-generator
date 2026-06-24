@@ -1,5 +1,5 @@
 // Google Document AI REST client
-// Splits PDFs larger than 30 pages into chunks before sending to Document AI
+// Splits large PDFs into chunks and processes them in parallel
 
 const DOCAI_PAGE_LIMIT = 14;
 
@@ -49,7 +49,6 @@ async function getAccessToken(): Promise<string> {
   return tokenData.access_token;
 }
 
-// Send a base64-encoded PDF (or chunk) to Document AI and return OCR text
 async function ocrChunk(
   pdfBase64: string,
   accessToken: string,
@@ -79,13 +78,10 @@ async function ocrChunk(
   return data?.document?.text ?? '';
 }
 
-// Split a PDF buffer into chunks of at most maxPages pages
-// Uses a simple byte-level page boundary detection
 async function splitPdfIntoChunks(
   pdfBuffer: Buffer,
   maxPages: number
 ): Promise<Buffer[]> {
-  // Dynamically import pdf-lib for server-side PDF splitting
   const { PDFDocument } = await import('pdf-lib');
 
   const srcDoc = await PDFDocument.load(pdfBuffer);
@@ -133,22 +129,29 @@ export async function ocrPdfFromUrl(pdfUrl: string): Promise<string> {
 
   const accessToken = await getAccessToken();
 
-  // Split into 30-page chunks if needed
+  // Split into chunks if needed
   const chunks = await splitPdfIntoChunks(pdfBuffer, DOCAI_PAGE_LIMIT);
 
-  // OCR each chunk and concatenate results
-  const textParts: string[] = [];
-  for (const chunk of chunks) {
-    const chunkBase64 = chunk.toString('base64');
-    const chunkText = await ocrChunk(
-      chunkBase64,
-      accessToken,
-      projectNumber,
-      processorId,
-      location
-    );
-    textParts.push(chunkText);
+  if (chunks.length === 1) {
+    // Single chunk — no splitting needed
+    const base64 = chunks[0].toString('base64');
+    return ocrChunk(base64, accessToken, projectNumber, processorId, location);
   }
 
-  return textParts.join('\n\n');
+  // Multiple chunks — process ALL in parallel for speed
+  console.log(`Splitting ${chunks.length}-chunk PDF, processing in parallel...`);
+
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      ocrChunk(
+        chunk.toString('base64'),
+        accessToken,
+        projectNumber,
+        processorId,
+        location
+      )
+    )
+  );
+
+  return results.join('\n\n');
 }
