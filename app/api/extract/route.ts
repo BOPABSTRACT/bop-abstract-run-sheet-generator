@@ -10,8 +10,6 @@ interface ExtractedRow extends ExtractedInstrument {
 }
 
 // Normalize VOL/PAGE to standard format: DB XXXX/XXX
-// Handles: "DB 9968-415", "DBV 9968-415", "D.B.V. 3616, Page 534",
-//          "3132-571", "Deed Book 9968, page 415", "Vol. 261, Page 445"
 function normalizeVolPage(raw: string): string {
   if (!raw || raw.trim() === '') return raw;
   const s = raw.trim();
@@ -33,11 +31,44 @@ function normalizeVolPage(raw: string): string {
   const nums = s.match(/\d+/g);
   if (!nums || nums.length < 2) return s;
 
-  // Last two numbers are volume and page
   const vol  = nums[nums.length - 2];
   const page = nums[nums.length - 1];
 
   return `${prefix} ${vol}/${page}`;
+}
+
+// Post-process instrument type based on OCR text evidence
+// Catches cases where Claude misclassifies corporate General Warranty Deeds
+function correctDeedType(inst: ExtractedInstrument, ocrText: string): ExtractedInstrument {
+  const type = (inst.instrument_type || '').toLowerCase();
+  const ocr  = ocrText.toUpperCase();
+
+  // Only attempt correction on deeds
+  if (!type.includes('deed')) return inst;
+
+  // If Claude said Special Warranty, check OCR for General Warranty evidence
+  if (type === 'special warranty deed') {
+    const hasGeneralWarranty =
+      // Classic general warranty phrases
+      ocr.includes('WARRANT AND FOREVER DEFEND') &&
+      // No limiting "by through or under" language present
+      !ocr.includes('BY, THROUGH OR UNDER') &&
+      !ocr.includes('BY, THROUGH, OR UNDER') &&
+      !ocr.includes('CLAIMING BY, THROUGH') &&
+      !ocr.includes('SPECIAL WARRANTY');
+
+    if (hasGeneralWarranty) {
+      return {
+        ...inst,
+        instrument_type: 'General Warranty Deed',
+        notes_for_reviewer:
+          (inst.notes_for_reviewer ? inst.notes_for_reviewer + ' | ' : '') +
+          'Auto-corrected from Special to General Warranty Deed — "WARRANT AND FOREVER DEFEND" found without limiting language in OCR text.',
+      };
+    }
+  }
+
+  return inst;
 }
 
 export async function POST(req: NextRequest) {
@@ -77,7 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     const rows: ExtractedRow[] = instruments.map((inst) => ({
-      ...inst,
+      ...correctDeedType(inst, ocrText),
       vol_page: normalizeVolPage(inst.vol_page),
       source_file: filename,
     }));
