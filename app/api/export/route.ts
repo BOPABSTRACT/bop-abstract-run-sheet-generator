@@ -11,12 +11,10 @@ function estimateRowHeight(row: any, colWidths: number[]): number {
     { text: row.description || '', width: colWidths[5] },
     { text: row.comments || '', width: colWidths[6] },
   ];
-
   const CHAR_WIDTH = 1.1;
   const LINE_HEIGHT = 15;
   const MIN_HEIGHT = 40;
   const PADDING = 10;
-
   let maxLines = 1;
   for (const col of textCols) {
     if (!col.text) continue;
@@ -25,17 +23,12 @@ function estimateRowHeight(row: any, colWidths: number[]): number {
     let lines = 1;
     let lineLen = 0;
     for (const word of words) {
-      if (lineLen + word.length + 1 > charsPerLine) {
-        lines++;
-        lineLen = word.length;
-      } else {
-        lineLen += word.length + 1;
-      }
+      if (lineLen + word.length + 1 > charsPerLine) { lines++; lineLen = word.length; }
+      else { lineLen += word.length + 1; }
     }
     lines += (col.text.match(/\n/g) || []).length;
     if (lines > maxLines) maxLines = lines;
   }
-
   return Math.max(MIN_HEIGHT, maxLines * LINE_HEIGHT + PADDING);
 }
 
@@ -44,35 +37,36 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       abstractorName,
+      surfaceOwner,
       propertyDescription,
       parcelNumber,
       acreage,
       district,
       county,
+      state,
+      dueDate,
       sortField,
       rows,
     } = body;
 
-    const today = new Date().toLocaleDateString('en-US');
     const sortLabel = sortField === 'recorded_date' ? 'Recorded Date' : 'Doc Date';
+    const dueDateDisplay = dueDate && dueDate.trim() !== '' ? dueDate.trim() : 'N/A';
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Chain of Title');
 
-    // 7 columns: A-G (dates combined into one column)
     const colWidths = [14, 20, 18, 24, 24, 32, 38];
 
     ws.columns = [
-      { key: 'a', width: colWidths[0] },  // A VOL/PAGE
-      { key: 'b', width: colWidths[1] },  // B Instrument Type
-      { key: 'c', width: colWidths[2] },  // C Doc Date / Recorded Date (combined)
-      { key: 'd', width: colWidths[3] },  // D Grantor
-      { key: 'e', width: colWidths[4] },  // E Grantee
-      { key: 'f', width: colWidths[5] },  // F Description
-      { key: 'g', width: colWidths[6] },  // G Comments
+      { key: 'a', width: colWidths[0] },
+      { key: 'b', width: colWidths[1] },
+      { key: 'c', width: colWidths[2] },
+      { key: 'd', width: colWidths[3] },
+      { key: 'e', width: colWidths[4] },
+      { key: 'f', width: colWidths[5] },
+      { key: 'g', width: colWidths[6] },
     ];
 
-    // ── Borders ───────────────────────────────────────────────────────────
     const thickBorder: Partial<ExcelJS.Borders> = {
       top: { style: 'thick' }, bottom: { style: 'thick' },
       left: { style: 'thick' }, right: { style: 'thick' },
@@ -85,13 +79,9 @@ export async function POST(req: NextRequest) {
       top: { style: 'thin' }, bottom: { style: 'thin' },
       left: { style: 'thin' }, right: { style: 'thin' },
     };
-
-    // ── Fill ──────────────────────────────────────────────────────────────
     const yellowFill: ExcelJS.Fill = {
       type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' },
     };
-
-    // ── Alignments ────────────────────────────────────────────────────────
     const centerWrap: Partial<ExcelJS.Alignment> = {
       horizontal: 'center', vertical: 'top', wrapText: true,
     };
@@ -102,23 +92,16 @@ export async function POST(req: NextRequest) {
       horizontal: 'left', vertical: 'top', wrapText: true,
     };
 
-    // ── ROW 1: Title ──────────────────────────────────────────────────────
-    // Surface owner / company name goes here — pulled from propertyDescription
-    // first line, or user can edit. For now uses a placeholder that abstracts
-    // to the full title format matching the template.
+    // ── ROW 1: Title — Surface Owner ──────────────────────────────────────
     ws.getRow(1).height = 33;
     ws.mergeCells('A1:G1');
     const titleCell = ws.getCell('A1');
-    titleCell.value = `RUN SHEET - ${propertyDescription.split('\n')[0].trim()} - CHAIN OF TITLE`;
+    titleCell.value = `RUN SHEET - ${surfaceOwner} - CHAIN OF TITLE`;
     titleCell.font = { name: 'Calibri', size: 18 };
     titleCell.alignment = centerWrap;
     titleCell.border = thickBorder;
 
     // ── ROW 2: Abstractor Name / Due Date ─────────────────────────────────
-    // A2:B2 = "Abstractor Name:" label
-    // C2:E2 = abstractor name value
-    // F2    = "Due Date:" label
-    // G2    = due date value
     ws.getRow(2).height = 57;
     ws.mergeCells('A2:B2');
     ws.mergeCells('C2:E2');
@@ -142,7 +125,7 @@ export async function POST(req: NextRequest) {
     dueLabelCell.border = thickBorder;
 
     const dueValueCell = ws.getCell('G2');
-    dueValueCell.value = today;
+    dueValueCell.value = dueDateDisplay;
     dueValueCell.font = { name: 'Calibri', size: 14 };
     dueValueCell.alignment = centerMiddle;
     dueValueCell.border = thickBorder;
@@ -151,7 +134,7 @@ export async function POST(req: NextRequest) {
     ws.getRow(3).height = 52;
     ws.mergeCells('A3:G3');
     const descCell = ws.getCell('A3');
-    descCell.value = `${acreage} acres of land situate ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
+    descCell.value = `${acreage} acres, more or less, ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: ${state}`;
     descCell.font = { name: 'Calibri', size: 12 };
     descCell.alignment = centerWrap;
     descCell.border = thickBorder;
@@ -182,10 +165,8 @@ export async function POST(req: NextRequest) {
       const exRow = ws.getRow(rowNum);
       exRow.height = estimateRowHeight(r, colWidths);
 
-      // Combine doc date and recorded date into one cell with line break
       const combinedDates = [r.doc_date || '', r.recorded_date || '']
-        .filter(Boolean)
-        .join('\n\n');
+        .filter(Boolean).join('\n\n');
 
       const data = [
         r.vol_page        || '',
@@ -206,11 +187,9 @@ export async function POST(req: NextRequest) {
       });
     });
 
-    // ── Write buffer ──────────────────────────────────────────────────────
     const buffer = await wb.xlsx.writeBuffer();
-
     const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
-    const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}_sortedBy${sortField === 'recorded_date' ? 'RecordedDate' : 'DocDate'}.xlsx`;
+    const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}.xlsx`;
 
     return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
