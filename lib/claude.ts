@@ -39,51 +39,54 @@ CRITICAL RULES — follow these exactly:
 
 1. ONLY extract the PRIMARY instrument on the page. Do NOT create separate entries for instruments mentioned in "Prior References", "Prior Deeds", "see also", or "referenced herein". Those are citations only.
 
-2. VOL/PAGE format: Always format as "DB XXXX/XXX" using a forward slash. Examples:
+2. VOL/PAGE format: Always format as "DB XXXX/XXX" using a forward slash between volume and page number. Examples:
    - "Deed Book 9968, page 415" → "DB 9968/415"
    - "D.B.V. 3616, Page 534" → "DB 3616/534"
    - "DB 3132-571" → "DB 3132/571"
    - "Volume 261, Page 445" → "DB 261/445"
-   - If the prefix is different (e.g. "OB" for oil/gas, "MB" for miscellaneous) use that prefix instead of "DB".
-   - Always use a forward slash "/" between volume and page, never a dash or comma.
+   - "DBV 9968-415" → "DB 9968/415"
+   - ALWAYS use a forward slash "/" between volume and page. NEVER use a dash or comma.
+   - ALWAYS use exactly "DB" as the prefix unless a different book type is clearly indicated (OB, MB, etc.)
 
-3. INSTRUMENT TYPE must be fully specific. Never just write "Deed". Always write the full type:
-   - "General Warranty Deed" — grantor warrants title against all claims forever
-   - "Special Warranty Deed" — grantor warrants only against claims arising during their ownership
-   - "Quitclaim Deed" — grantor conveys whatever interest they have with no warranty
-   - "Trustee's Deed"
-   - "Executor's Deed"
-   - "Administrator's Deed"
-   - "Sheriff's Deed"
-   - "Oil and Gas Lease"
+3. INSTRUMENT TYPE — NEVER return just "Deed". Always return the FULL specific type.
+
+   To determine General vs Special Warranty Deed, look for the WARRANTY CLAUSE:
+   - "General Warranty Deed" — the grantor warrants title against ALL persons and ALL claims whatsoever. Key phrases: "warrant and defend against ALL lawful claimants", "warrant generally", "general warranty". Corporate grantors (coal companies, railroad companies) that include a warranty clause defending against ALL claimants = General Warranty Deed.
+   - "Special Warranty Deed" — the grantor only warrants against claims arising BY, THROUGH, or UNDER the grantor themselves. Key phrases: "warrant and defend against claims of persons claiming BY, THROUGH, or UNDER grantor", "special warranty", "warrant specially".
+   - If the deed says "SHALL AND WILL WARRANT AND FOREVER DEFEND" without limiting to claims "by, through, or under" — that is a GENERAL WARRANTY DEED.
+   - If no warranty clause can be found: "Deed (type unstated)"
+
+   Other full instrument types to use:
+   - "Quitclaim Deed", "Trustee's Deed", "Executor's Deed", "Administrator's Deed", "Sheriff's Deed"
+   - "Oil and Gas Lease", "Memorandum of Oil and Gas Lease"
    - "Assignment of Oil and Gas Lease"
-   - "Memorandum of Oil and Gas Lease"
    - "Right-of-Way and Easement Agreement"
    - "Memorandum of Temporary Easement and Right-of-Way Agreement"
    - "Will" / "Last Will and Testament"
-   - "Release of Lien"
-   - etc.
-   To determine General vs Special warranty: look for the warranty clause. "Warrant and forever defend against ALL lawful claimants" = General Warranty. "Warrant and forever defend against claims of persons claiming BY, THROUGH, or UNDER the grantor" = Special Warranty. If the deed type is not stated and no warranty clause is present, write "Deed (type unstated)".
+   - "Release of Lien", "Satisfaction of Mortgage"
 
-4. DESCRIPTION field: Describe the property conveyed in neutral, standardized language. Always use:
+4. DATES — Return dates exactly as they appear in the document. Do not reformat or convert them. If the document says "May 13, 1997" return "May 13, 1997". If it says "6/18/1997" return "6/18/1997". Do not convert to ISO format or any other format.
+
+5. DESCRIPTION field: Describe the property conveyed in neutral, standardized language. Always use:
    - "Excepting and Reserving" (never "Saving and Excepting" or "Reserving and Excepting")
    - "more or less" (never "more-or-less" or "M/L")
    - "situate" (never "situated" or "lying")
    - "bounded and described as follows" for metes and bounds references
 
-5. COMMENTS field: Include prior deed references, consideration, exceptions, and reservations. Always use:
+6. COMMENTS field: Include prior deed references, consideration, exceptions, reservations, and any other encumbrances. Always use:
    - "Excepting and Reserving" (standardized)
-   - "Prior Reference:" to introduce prior deed citations, formatted as "Prior Reference: DB XXXX/XXX"
+   - "Prior Reference: DB XXXX/XXX" to introduce prior deed citations
    - "Subject to:" for easements and restrictions
+   - "Together with:" for appurtenant rights
 
-6. If a field cannot be determined from the text, return an empty string. Never guess or fabricate.
+7. If a field cannot be determined from the text, return an empty string. Never guess or fabricate.
 
-7. CONFIDENCE scoring:
+8. CONFIDENCE scoring:
    - "high" = all fields clearly readable, typed document
    - "medium" = most fields readable, some ambiguity
    - "low" = handwritten, heavily degraded, or significant fields missing
 
-8. You MUST return ONLY a valid JSON array. No explanation, no markdown, no code fences, no preamble. Just the raw JSON array starting with [ and ending with ].
+9. You MUST return ONLY a valid JSON array. No explanation, no markdown, no code fences, no preamble. Just the raw JSON array starting with [ and ending with ].
 
 Return a JSON array of objects with these exact fields:
 - vol_page
