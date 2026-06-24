@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { upload } from '@vercel/blob/client';
 
 const LOGO = 'https://i.imgur.com/szjzoxt.png';
 
@@ -106,19 +107,16 @@ export default function Home() {
       const fileArray = Array.from(files);
       const total = fileArray.length;
 
-      showStatus(`Uploading ${total} file(s)...`, 'info');
+      showStatus(`Uploading ${total} file(s) directly to cloud storage...`, 'info');
 
+      // Upload directly from browser to Vercel Blob — bypasses Vercel function size limit entirely
       const uploadResults = await Promise.all(
         fileArray.map(async (file) => {
-          const formData = new FormData();
-          formData.append('file', file);
-          const uploadRes = await fetch('/api/upload-url', { method: 'POST', body: formData });
-          if (!uploadRes.ok) {
-            const errText = await uploadRes.text();
-            throw new Error(`Upload failed for ${file.name} (${uploadRes.status}): ${errText}`);
-          }
-          const { url, filename } = await uploadRes.json();
-          return { url, filename: filename ?? file.name, originalName: file.name };
+          const blob = await upload(file.name, file, {
+            access: 'public',
+            handleUploadUrl: '/api/upload-url',
+          });
+          return { url: blob.url, filename: file.name, originalName: file.name };
         })
       );
 
@@ -196,18 +194,9 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          abstractorName,
-          surfaceOwner,
-          propertyDescription,
-          parcelNumber,
-          acreage,
-          district,
-          county,
-          state,
-          dueDate,
-          sortField,
-          sortDirection,
-          rows: sorted,
+          abstractorName, surfaceOwner, propertyDescription,
+          parcelNumber, acreage, district, county, state,
+          dueDate, sortField, sortDirection, rows: sorted,
         }),
       });
       if (!res.ok) {
@@ -286,7 +275,7 @@ export default function Home() {
       </div>
       <div className="form-group">
         <label>{'Property Description *'}</label>
-        <textarea value={propertyDescription} onChange={(e) => setPropertyDescription(e.target.value)} placeholder="e.g., situate on the waters of Owen Davy Fork of Buffalo Creek" />
+        <textarea value={propertyDescription} onChange={(e) => setPropertyDescription(e.target.value)} placeholder="e.g., situate in Plum Borough, Allegheny County, Pennsylvania" />
       </div>
       <div className="form-group">
         <label>{'Parcel Number *'}</label>
@@ -420,11 +409,4 @@ export default function Home() {
             </label>
           </div>
 
-          <button className="btn-export" onClick={exportToExcel} disabled={isProcessing || isExporting}>
-            {isExporting ? 'Building Excel...' : 'Export to Excel'}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+          <button
