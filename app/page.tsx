@@ -409,4 +409,11 @@ export default function Home() {
             </label>
           </div>
 
-          <button
+          <button className="btn-export" onClick={exportToExcel} disabled={isProcessing || isExporting}>
+            {isExporting ? 'Building Excel...' : 'Export to Excel'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
