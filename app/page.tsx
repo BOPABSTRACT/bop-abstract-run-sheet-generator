@@ -299,3 +299,112 @@ export default function Home() {
 
       <div className="button-group">
         <button className="btn-real" onClick={generateWithAPI} disabled={isProcessing}>
+          {isProcessing ? 'Processing...' : 'Generate with Real Data'}
+        </button>
+      </div>
+
+      {progress && (
+        <div className="progress-bar-container">
+          <div className="progress-bar" style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }} />
+          <span className="progress-label">{progress.done} of {progress.total} files done</span>
+        </div>
+      )}
+
+      {status && <div className={`status ${status.type}`}>{status.message}</div>}
+
+      {errors.length > 0 && (
+        <div>
+          <h2>{'Errors'}</h2>
+          <ul>{errors.map((e, i) => <li key={i}><strong>{e.file}</strong>{': '}{e.error}</li>)}</ul>
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div>
+          <h2>{'Review and Edit Extracted Instruments'}</h2>
+
+          <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600 }}>{'Sort table by:'}</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="tableSort" value="recorded_date" checked={tableSort === 'recorded_date'} onChange={() => setTableSort('recorded_date')} />
+              {'Recorded Date'}
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="tableSort" value="doc_date" checked={tableSort === 'doc_date'} onChange={() => setTableSort('doc_date')} />
+              {'Doc Date'}
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="tableSortDir" value="desc" checked={tableSortDirection === 'desc'} onChange={() => setTableSortDirection('desc')} />
+              {'Newest First'}
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="tableSortDir" value="asc" checked={tableSortDirection === 'asc'} onChange={() => setTableSortDirection('asc')} />
+              {'Oldest First'}
+            </label>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>{'Source'}</th>
+                  <th>{'VOL/PAGE'}</th>
+                  <th>{'Instrument Type'}</th>
+                  <th>{'Doc Date'}</th>
+                  <th>{'Recorded Date'}</th>
+                  <th>{'Grantor'}</th>
+                  <th>{'Grantee'}</th>
+                  <th>{'Description'}</th>
+                  <th>{'Comments'}</th>
+                  <th>{'Notes for Reviewer'}</th>
+                  <th>{'Actions'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedRows.map((row, i) => (
+                  <tr key={i} className={`conf-${row.confidence}`}>
+                    <td>{row.source_file}</td>
+                    <td><input value={row.vol_page} onChange={(e) => updateRow(rows.indexOf(row), 'vol_page', e.target.value)} /></td>
+                    <td><input value={row.instrument_type} onChange={(e) => updateRow(rows.indexOf(row), 'instrument_type', e.target.value)} /></td>
+                    <td><input value={row.doc_date} onChange={(e) => updateRow(rows.indexOf(row), 'doc_date', e.target.value)} /></td>
+                    <td><input value={row.recorded_date} onChange={(e) => updateRow(rows.indexOf(row), 'recorded_date', e.target.value)} /></td>
+                    <td><textarea rows={3} value={row.grantor} onChange={(e) => updateRow(rows.indexOf(row), 'grantor', e.target.value)} /></td>
+                    <td><textarea rows={3} value={row.grantee} onChange={(e) => updateRow(rows.indexOf(row), 'grantee', e.target.value)} /></td>
+                    <td><textarea rows={4} value={row.description} onChange={(e) => updateRow(rows.indexOf(row), 'description', e.target.value)} /></td>
+                    <td><textarea rows={4} value={row.comments} onChange={(e) => updateRow(rows.indexOf(row), 'comments', e.target.value)} /></td>
+                    <td><textarea rows={3} value={row.notes_for_reviewer} onChange={(e) => updateRow(rows.indexOf(row), 'notes_for_reviewer', e.target.value)} placeholder="—" /></td>
+                    <td><button onClick={() => deleteRow(rows.indexOf(row))}>{'Delete'}</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ marginTop: '1.5rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600 }}>{'Export sorted by:'}</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="exportSort" value="recorded_date" checked={sortField === 'recorded_date'} onChange={() => setSortField('recorded_date')} />
+              {'Recorded Date'}
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="exportSort" value="doc_date" checked={sortField === 'doc_date'} onChange={() => setSortField('doc_date')} />
+              {'Doc Date'}
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="exportSortDir" value="desc" checked={sortDirection === 'desc'} onChange={() => setSortDirection('desc')} />
+              {'Newest First'}
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="exportSortDir" value="asc" checked={sortDirection === 'asc'} onChange={() => setSortDirection('asc')} />
+              {'Oldest First'}
+            </label>
+          </div>
+
+          <button className="btn-export" onClick={exportToExcel} disabled={isProcessing || isExporting}>
+            {isExporting ? 'Building Excel...' : 'Export to Excel'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
