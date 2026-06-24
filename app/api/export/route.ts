@@ -4,13 +4,12 @@ import ExcelJS from 'exceljs';
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-// Estimate row height needed based on text length and column width
 function estimateRowHeight(row: any, colWidths: number[]): number {
   const textCols = [
-    { text: row.grantor || '', width: colWidths[4] },
-    { text: row.grantee || '', width: colWidths[5] },
-    { text: row.description || '', width: colWidths[6] },
-    { text: row.comments || '', width: colWidths[7] },
+    { text: row.grantor || '', width: colWidths[3] },
+    { text: row.grantee || '', width: colWidths[4] },
+    { text: row.description || '', width: colWidths[5] },
+    { text: row.comments || '', width: colWidths[6] },
   ];
 
   const CHAR_WIDTH = 1.1;
@@ -33,7 +32,6 @@ function estimateRowHeight(row: any, colWidths: number[]): number {
         lineLen += word.length + 1;
       }
     }
-    // Also count explicit newlines
     lines += (col.text.match(/\n/g) || []).length;
     if (lines > maxLines) maxLines = lines;
   }
@@ -61,99 +59,100 @@ export async function POST(req: NextRequest) {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Chain of Title');
 
-    const colWidths = [14, 20, 13, 13, 24, 24, 32, 38];
+    // 7 columns: A-G (dates combined into one column)
+    const colWidths = [14, 20, 18, 24, 24, 32, 38];
 
-    // ── Column widths ─────────────────────────────────────────────────────
     ws.columns = [
-      { key: 'a', width: colWidths[0] },
-      { key: 'b', width: colWidths[1] },
-      { key: 'c', width: colWidths[2] },
-      { key: 'd', width: colWidths[3] },
-      { key: 'e', width: colWidths[4] },
-      { key: 'f', width: colWidths[5] },
-      { key: 'g', width: colWidths[6] },
-      { key: 'h', width: colWidths[7] },
+      { key: 'a', width: colWidths[0] },  // A VOL/PAGE
+      { key: 'b', width: colWidths[1] },  // B Instrument Type
+      { key: 'c', width: colWidths[2] },  // C Doc Date / Recorded Date (combined)
+      { key: 'd', width: colWidths[3] },  // D Grantor
+      { key: 'e', width: colWidths[4] },  // E Grantee
+      { key: 'f', width: colWidths[5] },  // F Description
+      { key: 'g', width: colWidths[6] },  // G Comments
     ];
 
-    // ── Shared style helpers ──────────────────────────────────────────────
+    // ── Borders ───────────────────────────────────────────────────────────
     const thickBorder: Partial<ExcelJS.Borders> = {
-      top:    { style: 'thick' },
-      bottom: { style: 'thick' },
-      left:   { style: 'thick' },
-      right:  { style: 'thick' },
+      top: { style: 'thick' }, bottom: { style: 'thick' },
+      left: { style: 'thick' }, right: { style: 'thick' },
     };
     const mediumBorder: Partial<ExcelJS.Borders> = {
-      top:    { style: 'medium' },
-      bottom: { style: 'medium' },
-      left:   { style: 'medium' },
-      right:  { style: 'medium' },
+      top: { style: 'medium' }, bottom: { style: 'medium' },
+      left: { style: 'medium' }, right: { style: 'medium' },
     };
     const dataBorder: Partial<ExcelJS.Borders> = {
-      top:    { style: 'thin' },
-      bottom: { style: 'thin' },
-      left:   { style: 'thin' },
-      right:  { style: 'thin' },
+      top: { style: 'thin' }, bottom: { style: 'thin' },
+      left: { style: 'thin' }, right: { style: 'thin' },
     };
+
+    // ── Fill ──────────────────────────────────────────────────────────────
     const yellowFill: ExcelJS.Fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFFFFF00' },
+      type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' },
     };
+
+    // ── Alignments ────────────────────────────────────────────────────────
     const centerWrap: Partial<ExcelJS.Alignment> = {
-      horizontal: 'center',
-      vertical: 'top',
-      wrapText: true,
+      horizontal: 'center', vertical: 'top', wrapText: true,
     };
     const centerMiddle: Partial<ExcelJS.Alignment> = {
-      horizontal: 'center',
-      vertical: 'middle',
-      wrapText: true,
+      horizontal: 'center', vertical: 'middle', wrapText: true,
     };
     const leftWrap: Partial<ExcelJS.Alignment> = {
-      horizontal: 'left',
-      vertical: 'top',
-      wrapText: true,
+      horizontal: 'left', vertical: 'top', wrapText: true,
     };
 
     // ── ROW 1: Title ──────────────────────────────────────────────────────
+    // Surface owner / company name goes here — pulled from propertyDescription
+    // first line, or user can edit. For now uses a placeholder that abstracts
+    // to the full title format matching the template.
     ws.getRow(1).height = 33;
-    ws.mergeCells('A1:H1');
+    ws.mergeCells('A1:G1');
     const titleCell = ws.getCell('A1');
-    titleCell.value = `RUN SHEET - ${abstractorName} - CHAIN OF TITLE`;
+    titleCell.value = `RUN SHEET - ${propertyDescription.split('\n')[0].trim()} - CHAIN OF TITLE`;
     titleCell.font = { name: 'Calibri', size: 18 };
     titleCell.alignment = centerWrap;
     titleCell.border = thickBorder;
 
-    // ── ROW 2: Abstractor / Due Date ──────────────────────────────────────
+    // ── ROW 2: Abstractor Name / Due Date ─────────────────────────────────
+    // A2:B2 = "Abstractor Name:" label
+    // C2:E2 = abstractor name value
+    // F2    = "Due Date:" label
+    // G2    = due date value
     ws.getRow(2).height = 57;
     ws.mergeCells('A2:B2');
-    ws.mergeCells('C2:F2');
-    ws.mergeCells('G2:H2');
+    ws.mergeCells('C2:E2');
 
     const abLabelCell = ws.getCell('A2');
     abLabelCell.value = 'Abstractor Name:';
-    abLabelCell.font = { name: 'Calibri', size: 18 };
+    abLabelCell.font = { name: 'Calibri', size: 14 };
     abLabelCell.alignment = centerMiddle;
     abLabelCell.border = thickBorder;
 
-    const abCell = ws.getCell('C2');
-    abCell.value = abstractorName;
-    abCell.font = { name: 'Calibri', size: 18 };
-    abCell.alignment = centerMiddle;
-    abCell.border = thickBorder;
+    const abValueCell = ws.getCell('C2');
+    abValueCell.value = abstractorName;
+    abValueCell.font = { name: 'Calibri', size: 14 };
+    abValueCell.alignment = centerMiddle;
+    abValueCell.border = thickBorder;
 
-    const dueCell = ws.getCell('G2');
-    dueCell.value = `Due Date:  ${today}`;
-    dueCell.font = { name: 'Calibri', size: 18 };
-    dueCell.alignment = centerMiddle;
-    dueCell.border = thickBorder;
+    const dueLabelCell = ws.getCell('F2');
+    dueLabelCell.value = 'Due Date:';
+    dueLabelCell.font = { name: 'Calibri', size: 14 };
+    dueLabelCell.alignment = centerMiddle;
+    dueLabelCell.border = thickBorder;
 
-    // ── ROW 3: Description ────────────────────────────────────────────────
+    const dueValueCell = ws.getCell('G2');
+    dueValueCell.value = today;
+    dueValueCell.font = { name: 'Calibri', size: 14 };
+    dueValueCell.alignment = centerMiddle;
+    dueValueCell.border = thickBorder;
+
+    // ── ROW 3: Property Description ───────────────────────────────────────
     ws.getRow(3).height = 52;
-    ws.mergeCells('A3:H3');
+    ws.mergeCells('A3:G3');
     const descCell = ws.getCell('A3');
-    descCell.value = `Description: ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
-    descCell.font = { name: 'Calibri', size: 14 };
+    descCell.value = `${acreage} acres of land situate ${propertyDescription}\nCurrent Parcel Nos.: ${parcelNumber}     Current Acreage: ${acreage}     District: ${district}     County: ${county}     State: West Virginia`;
+    descCell.font = { name: 'Calibri', size: 12 };
     descCell.alignment = centerWrap;
     descCell.border = thickBorder;
 
@@ -162,17 +161,15 @@ export async function POST(req: NextRequest) {
     const headers = [
       'VOL/PAGE',
       'Instrument Type',
-      `Doc. Date\n(sorted by ${sortLabel})`,
-      'Recorded Date',
+      `Doc. Date\nRecorded Date\n(sorted by ${sortLabel})`,
       'Grantor',
       'Grantee',
       'Description',
       'Comments',
     ];
-    const colLetters = ['A','B','C','D','E','F','G','H'];
-    headers.forEach((h, i) => {
-      const cell = ws.getCell(`${colLetters[i]}4`);
-      cell.value = h;
+    ['A','B','C','D','E','F','G'].forEach((col, i) => {
+      const cell = ws.getCell(`${col}4`);
+      cell.value = headers[i];
       cell.font = { name: 'Calibri', size: 11, bold: true };
       cell.fill = yellowFill;
       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
@@ -183,15 +180,17 @@ export async function POST(req: NextRequest) {
     rows.forEach((r: any, idx: number) => {
       const rowNum = idx + 5;
       const exRow = ws.getRow(rowNum);
-
-      // Auto-calculate height based on longest wrapped text in G and H
       exRow.height = estimateRowHeight(r, colWidths);
+
+      // Combine doc date and recorded date into one cell with line break
+      const combinedDates = [r.doc_date || '', r.recorded_date || '']
+        .filter(Boolean)
+        .join('\n\n');
 
       const data = [
         r.vol_page        || '',
         r.instrument_type || '',
-        r.doc_date        || '',
-        r.recorded_date   || '',
+        combinedDates,
         r.grantor         || '',
         r.grantee         || '',
         r.description     || '',
@@ -203,11 +202,11 @@ export async function POST(req: NextRequest) {
         cell.value = val;
         cell.font = { name: 'Calibri', size: 11 };
         cell.border = dataBorder;
-        cell.alignment = ci <= 3 ? centerWrap : leftWrap;
+        cell.alignment = ci <= 2 ? centerWrap : leftWrap;
       });
     });
 
-    // ── Write to buffer and return ────────────────────────────────────────
+    // ── Write buffer ──────────────────────────────────────────────────────
     const buffer = await wb.xlsx.writeBuffer();
 
     const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
