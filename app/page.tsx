@@ -41,40 +41,6 @@ function parseDate(dateStr: string): Date {
   return new Date(0);
 }
 
-function formatDate(dateStr: string): string {
-  if (!dateStr || dateStr.trim() === '') return '';
-  const cleaned = dateStr.trim();
-  // Handle numeric formats: MM-DD-YYYY, MM/DD/YYYY, YYYY-MM-DD
-  const parts = cleaned.split(/[-\/]/);
-  if (parts.length === 3) {
-    const a = parseInt(parts[0]);
-    const b = parseInt(parts[1]);
-    const c = parseInt(parts[2]);
-    if (!isNaN(a) && !isNaN(b) && !isNaN(c)) {
-      if (a > 1000) {
-        // YYYY-MM-DD
-        if (a < 1600 || a > 2100) return cleaned;
-        return `${String(b).padStart(2, '0')}-${String(c).padStart(2, '0')}-${a}`;
-      } else {
-        // MM-DD-YYYY or MM/DD/YYYY
-        if (c < 1600 || c > 2100) return cleaned;
-        return `${String(a).padStart(2, '0')}-${String(b).padStart(2, '0')}-${c}`;
-      }
-    }
-  }
-  // Handle natural language dates e.g. "May 13, 1997"
-  // Use UTC methods to avoid timezone shift
-  const d = new Date(cleaned);
-  if (!isNaN(d.getTime())) {
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(d.getUTCDate()).padStart(2, '0');
-    const yyyy = d.getUTCFullYear();
-    if (yyyy < 1600 || yyyy > 2100) return cleaned;
-    return `${mm}-${dd}-${yyyy}`;
-  }
-  return cleaned;
-}
-
 export default function Home() {
   const [authenticated, setAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -176,12 +142,7 @@ export default function Home() {
             }
             const data = await res.json();
             if (data.rows && data.rows.length > 0) {
-              const normalized = data.rows.map((r: InstrumentRow) => ({
-                ...r,
-                doc_date: formatDate(r.doc_date),
-                recorded_date: formatDate(r.recorded_date),
-              }));
-              allRows.push(...normalized);
+              allRows.push(...data.rows);
             }
             if (data.error) allErrors.push({ file: originalName, error: data.error });
           } catch (err: unknown) {
