@@ -1,7 +1,7 @@
 // Google Document AI REST client
 // Splits PDFs larger than 30 pages into chunks before sending to Document AI
 
-const DOCAI_PAGE_LIMIT = 30;
+const DOCAI_PAGE_LIMIT = 14;
 
 async function getAccessToken(): Promise<string> {
   const keyBase64 = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64;
