@@ -26,17 +26,16 @@ interface ExtractError {
 function parseDate(dateStr: string): Date {
   if (!dateStr) return new Date(0);
   const cleaned = dateStr.trim();
-  // Try MM-DD-YYYY or MM/DD/YYYY first
   const parts = cleaned.split(/[-\/]/);
   if (parts.length === 3) {
-    const month = parseInt(parts[0]);
-    const day = parseInt(parts[1]);
-    const year = parseInt(parts[2]);
-    if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-      return new Date(year, month - 1, day);
+    const a = parseInt(parts[0]);
+    const b = parseInt(parts[1]);
+    const c = parseInt(parts[2]);
+    if (!isNaN(a) && !isNaN(b) && !isNaN(c)) {
+      if (a > 1000) return new Date(a, b - 1, c);
+      return new Date(c, a - 1, b);
     }
   }
-  // Try natural language date
   const d = new Date(cleaned);
   if (!isNaN(d.getTime())) return d;
   return new Date(0);
@@ -45,35 +44,31 @@ function parseDate(dateStr: string): Date {
 function formatDate(dateStr: string): string {
   if (!dateStr || dateStr.trim() === '') return '';
   const cleaned = dateStr.trim();
-  // Parse without timezone shift
+  // Handle numeric formats: MM-DD-YYYY, MM/DD/YYYY, YYYY-MM-DD
   const parts = cleaned.split(/[-\/]/);
   if (parts.length === 3) {
     const a = parseInt(parts[0]);
     const b = parseInt(parts[1]);
     const c = parseInt(parts[2]);
     if (!isNaN(a) && !isNaN(b) && !isNaN(c)) {
-      // Determine if format is YYYY-MM-DD or MM-DD-YYYY
       if (a > 1000) {
         // YYYY-MM-DD
-        const mm = String(b).padStart(2, '0');
-        const dd = String(c).padStart(2, '0');
         if (a < 1600 || a > 2100) return cleaned;
-        return `${mm}-${dd}-${a}`;
+        return `${String(b).padStart(2, '0')}-${String(c).padStart(2, '0')}-${a}`;
       } else {
         // MM-DD-YYYY or MM/DD/YYYY
-        const mm = String(a).padStart(2, '0');
-        const dd = String(b).padStart(2, '0');
         if (c < 1600 || c > 2100) return cleaned;
-        return `${mm}-${dd}-${c}`;
+        return `${String(a).padStart(2, '0')}-${String(b).padStart(2, '0')}-${c}`;
       }
     }
   }
-  // Try natural language (e.g. "May 13, 1997")
+  // Handle natural language dates e.g. "May 13, 1997"
+  // Use UTC methods to avoid timezone shift
   const d = new Date(cleaned);
   if (!isNaN(d.getTime())) {
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const yyyy = d.getUTCFullYear();
     if (yyyy < 1600 || yyyy > 2100) return cleaned;
     return `${mm}-${dd}-${yyyy}`;
   }
@@ -131,7 +126,7 @@ export default function Home() {
     if (!propertyDescription) { showStatus('Please fill in Property Description', 'error'); return; }
     if (!parcelNumber) { showStatus('Please fill in Parcel Number', 'error'); return; }
     if (!acreage) { showStatus('Please fill in Acreage', 'error'); return; }
-    if (!district) { showStatus('Please fill in District', 'error'); return; }
+    if (!district) { showStatus('Please fill in District / Borough / Township', 'error'); return; }
     if (!county) { showStatus('Please fill in County', 'error'); return; }
     if (!state) { showStatus('Please fill in State', 'error'); return; }
     if (!files || files.length === 0) { showStatus('Please upload at least one PDF file', 'error'); return; }
