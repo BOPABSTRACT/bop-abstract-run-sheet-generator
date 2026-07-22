@@ -27,41 +27,153 @@ function getCnxSection(instrumentType: string): string {
     t.includes('memorandum of oil') ||
     t.includes('paid-up') ||
     t.includes('paid up')
-  ) {
-    return 'LEASEHOLD';
-  }
-  if (t.includes('mortgage') || t.includes('open-end mortgage')) {
-    return 'MORTGAGES';
-  }
+  ) return 'LEASEHOLD';
+  if (t.includes('mortgage') || t.includes('open-end mortgage')) return 'MORTGAGES';
   if (
-    t.includes('right-of-way') ||
-    t.includes('right of way') ||
-    t.includes('easement') ||
-    t.includes('row')
-  ) {
-    return 'ROW';
-  }
+    t.includes('right-of-way') || t.includes('right of way') ||
+    t.includes('easement') || t.includes('row')
+  ) return 'ROW';
+  if (t.includes('outsale') || t.includes('out-conveyance') || t.includes('outconveyance')) return 'OUTSALES';
   if (
-    t.includes('outsale') ||
-    t.includes('out-conveyance') ||
-    t.includes('outconveyance')
-  ) {
-    return 'OUTSALES';
-  }
-  if (
-    t.includes('judgment') ||
-    t.includes('lien') ||
-    t.includes('affidavit') ||
-    t.includes('certificate') ||
-    t.includes('miscellaneous') ||
-    t.includes('will') ||
-    t.includes('plan') ||
-    t.includes('subdivision')
-  ) {
-    return 'MISC';
-  }
-  // Default: surface chain of title (deeds, assignments, etc.)
+    t.includes('judgment') || t.includes('lien') || t.includes('affidavit') ||
+    t.includes('certificate') || t.includes('miscellaneous') ||
+    t.includes('plan') || t.includes('subdivision')
+  ) return 'MISC';
   return 'SURFACE';
+}
+
+// Determine CNX instrument label
+// Rules 5 & 6: estate docs → "Death", marriage docs → "Marriage"
+function getCnxInstrumentLabel(instrumentType: string): string {
+  const t = instrumentType.toLowerCase();
+  if (
+    t.includes('executor') || t.includes('administrator') ||
+    t.includes('estate') || t.includes('will') ||
+    t.includes('letters testamentary') || t.includes('letters of administration') ||
+    t.includes('probate') || t.includes('fiduciary') ||
+    t.includes('death') || t.includes('obituary')
+  ) return 'Death';
+  if (
+    t.includes('marriage') || t.includes('spousal') ||
+    t.includes('dower') || t.includes('prenuptial')
+  ) return 'Marriage';
+  return instrumentType;
+}
+
+// Format a date string as "Month Day, Year" e.g. "January 13, 1892"
+// Handles: MM/DD/YYYY, YYYY-MM-DD, "May 13, 1997", "MAY 2, 1951", "August 30, 1957", etc.
+// If already in a written-out format, normalizes it. Pass-through if unparseable.
+function formatCnxDate(raw: string): string {
+  if (!raw || raw.trim() === '') return '';
+  const s = raw.trim();
+
+  const MONTHS = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December',
+  ];
+
+  // Try MM/DD/YYYY or M/D/YYYY
+  const slashMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slashMatch) {
+    const m = parseInt(slashMatch[1]);
+    const d = parseInt(slashMatch[2]);
+    const y = slashMatch[3];
+    if (m >= 1 && m <= 12) return `${MONTHS[m-1]} ${d}, ${y}`;
+  }
+
+  // Try YYYY-MM-DD
+  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const m = parseInt(isoMatch[2]);
+    const d = parseInt(isoMatch[3]);
+    const y = isoMatch[1];
+    if (m >= 1 && m <= 12) return `${MONTHS[m-1]} ${d}, ${y}`;
+  }
+
+  // Try MM-DD-YYYY
+  const dashMatch = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (dashMatch) {
+    const m = parseInt(dashMatch[1]);
+    const d = parseInt(dashMatch[2]);
+    const y = dashMatch[3];
+    if (m >= 1 && m <= 12) return `${MONTHS[m-1]} ${d}, ${y}`;
+  }
+
+  // Try already-written formats: "May 13, 1997", "MAY 2, 1951", "August 30, 1957"
+  // Also handles "24th day of January, 1997", "8th day of October, 1980"
+  const writtenMatch = s.match(
+    /(\d{1,2})(?:st|nd|rd|th)?\s+day\s+of\s+([A-Za-z]+)[,.]?\s+(\d{4})/i
+  );
+  if (writtenMatch) {
+    const d = parseInt(writtenMatch[1]);
+    const monthStr = writtenMatch[2];
+    const y = writtenMatch[3];
+    const mIdx = MONTHS.findIndex(m => m.toLowerCase() === monthStr.toLowerCase());
+    if (mIdx >= 0) return `${MONTHS[mIdx]} ${d}, ${y}`;
+  }
+
+  const namedMatch = s.match(/^([A-Za-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?[,.]?\s+(\d{4})$/i);
+  if (namedMatch) {
+    const monthStr = namedMatch[1];
+    const d = parseInt(namedMatch[2]);
+    const y = namedMatch[3];
+    const mIdx = MONTHS.findIndex(m => m.toLowerCase() === monthStr.toLowerCase());
+    if (mIdx >= 0) return `${MONTHS[mIdx]} ${d}, ${y}`;
+  }
+
+  // Already looks like "January 13, 1892" — return as-is
+  const alreadyGood = s.match(/^[A-Za-z]+ \d{1,2}, \d{4}$/);
+  if (alreadyGood) return s;
+
+  // Unparseable — return original
+  return s;
+}
+
+// Strip metes-and-bounds calls and boundary descriptions from text
+// Removes: "thence N 45° E 200 feet", "bearing S30W", degree/minute/second patterns,
+// "perches", "chains", "links", "poles", directional calls, etc.
+function stripBoundaryDescriptions(text: string): string {
+  if (!text) return text;
+
+  const lines = text.split('\n');
+  const kept: string[] = [];
+
+  for (const line of lines) {
+    const l = line.trim();
+
+    // Skip lines that are primarily metes-and-bounds calls
+    const isBoundaryLine =
+      // Directional bearing patterns: N 45° E, S30W, North 45 degrees East
+      /\b[NS]\s*\d+[°º]?\s*\d*[''']?\s*\d*["""]?\s*[EW]\b/i.test(l) ||
+      // "thence" lines
+      /^\s*thence\b/i.test(l) ||
+      // Lines with chains/perches/links/poles/rods as primary content
+      /\b\d+[\s.]*(?:chains?|perches?|links?|poles?|rods?|feet|ft\.?)\b.*\b(?:chains?|perches?|links?|poles?|rods?|feet|ft\.?)\b/i.test(l) ||
+      // Lines that are just a bearing and distance and nothing else meaningful
+      /^[NS]\s*\d+\s*[°º]?\s*[EW]\s*\d/i.test(l) ||
+      // "beginning at a point" / "beginning at an iron pin" standalone lines
+      /^beginning at (?:a|an) /i.test(l) ||
+      // Pure coordinate lines
+      /^\s*\d+[°º]\s*\d+'\s*\d+"\s*[NSEW]\b/i.test(l);
+
+    if (!isBoundaryLine) {
+      kept.push(line);
+    }
+  }
+
+  // Also strip inline bearing patterns from remaining lines
+  let result = kept.join('\n');
+
+  // Remove inline "thence [bearing] [distance]" phrases
+  result = result.replace(/[,;]?\s*thence\s+[^,;.\n]+(?:[,;.]|$)/gi, ' ');
+
+  // Remove standalone degree-bearing fragments
+  result = result.replace(/\b[NS]\s*\d+[°º]?\s*\d*['']?\s*\d*[""]?\s*[EW]\s+\d+[\s.]*(?:chains?|perches?|links?|poles?|rods?|feet|ft\.?)/gi, '');
+
+  // Clean up extra whitespace and punctuation artifacts
+  result = result.replace(/\s{2,}/g, ' ').replace(/,\s*,/g, ',').trim();
+
+  return result;
 }
 
 export async function POST(req: NextRequest) {
@@ -76,7 +188,6 @@ export async function POST(req: NextRequest) {
       district,
       county,
       state,
-      dueDate,
       rows,
     } = body as {
       abstractorName: string;
@@ -94,30 +205,29 @@ export async function POST(req: NextRequest) {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Title Chain');
 
-    // Column widths — matching CNX template
+    // 10 columns: A=# B=INSTRUMENT C=VOL/PG D=INSTRUMENT DATE E=FILE DATE
+    //             F=GRANTOR G=GRANTEE H=DESCRIPTION I=NOTES AND REFERENCES J=PLAT
+    // (Record Type col C and Net Acres col I from original template removed)
     ws.getColumn('A').width = 4.43;
-    ws.getColumn('B').width = 15.43;
+    ws.getColumn('B').width = 18;
     ws.getColumn('C').width = 15.43;
-    ws.getColumn('D').width = 15.43;
-    ws.getColumn('E').width = 15.43;
-    ws.getColumn('F').width = 15.43;
-    ws.getColumn('G').width = 39.29;
-    ws.getColumn('H').width = 25;
-    ws.getColumn('I').width = 12.43;
-    ws.getColumn('J').width = 42;
-    ws.getColumn('K').width = 30;
-    ws.getColumn('L').width = 8;
+    ws.getColumn('D').width = 18;
+    ws.getColumn('E').width = 18;
+    ws.getColumn('F').width = 39.29;
+    ws.getColumn('G').width = 30;
+    ws.getColumn('H').width = 42;
+    ws.getColumn('I').width = 35;
+    ws.getColumn('J').width = 8;
 
-    const LIGHT_BLUE = 'FFD9E1F2'; // Theme 9 tint 0.8 approximate
+    const LIGHT_BLUE = 'FFD9E1F2';
     const BORDER_COLOR = 'FF000000';
-
     const thinBorder: ExcelJS.Border = { style: 'thin', color: { argb: BORDER_COLOR } };
     const allBorders: Partial<ExcelJS.Borders> = {
       top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder,
     };
 
     // ── ROW 1 — Header block ──────────────────────────────────────────
-    ws.mergeCells('A1:L1');
+    ws.mergeCells('A1:J1');
     const headerCell = ws.getCell('A1');
     const searchDate = new Date().toLocaleDateString('en-US', {
       month: 'long', day: 'numeric', year: 'numeric',
@@ -132,9 +242,10 @@ export async function POST(req: NextRequest) {
 
     // ── ROW 2 — Column headers ────────────────────────────────────────
     const headers = [
-      '#', 'INSTRUMENT', 'RECORD TYPE', 'VOL/PG',
-      'INSTRUMENT DATE', 'FILE DATE', 'GRANTOR', 'GRANTEE',
-      'NET ACRES', 'DESCRIPTION', 'NOTES AND REFERENCES', 'PLAT',
+      '#', 'INSTRUMENT', 'VOL/PG',
+      'INSTRUMENT DATE', 'FILE DATE',
+      'GRANTOR', 'GRANTEE',
+      'DESCRIPTION', 'NOTES AND REFERENCES', 'PLAT',
     ];
     headers.forEach((h, i) => {
       const cell = ws.getCell(2, i + 1);
@@ -148,9 +259,8 @@ export async function POST(req: NextRequest) {
     // ── ROW 3 — Thin spacer ───────────────────────────────────────────
     ws.getRow(3).height = 2.25;
 
-    // Helper — write a section divider row
     function writeSectionHeader(rowNum: number, label: string) {
-      ws.mergeCells(`A${rowNum}:L${rowNum}`);
+      ws.mergeCells(`A${rowNum}:J${rowNum}`);
       const cell = ws.getCell(`A${rowNum}`);
       cell.value = label;
       cell.font = { name: 'Arial', size: 10, bold: true };
@@ -160,33 +270,31 @@ export async function POST(req: NextRequest) {
       ws.getRow(rowNum).height = 12.75;
     }
 
-    // Helper — write a data row
-    function writeDataRow(
-      rowNum: number,
-      num: number,
-      row: InstrumentRow,
-    ) {
+    function writeDataRow(rowNum: number, num: number, row: InstrumentRow) {
+      const cleanDesc = stripBoundaryDescriptions(row.description);
+      const cleanNotes = stripBoundaryDescriptions(
+        row.comments + (row.notes_for_reviewer ? '\n' + row.notes_for_reviewer : '')
+      );
+
       const cells = [
-        num,                    // A — #
-        row.instrument_type,    // B — INSTRUMENT
-        '',                     // C — RECORD TYPE (blank — user fills)
-        row.vol_page,           // D — VOL/PG
-        row.doc_date,           // E — INSTRUMENT DATE
-        row.recorded_date,      // F — FILE DATE
-        row.grantor,            // G — GRANTOR
-        row.grantee,            // H — GRANTEE
-        acreage,                // I — NET ACRES
-        row.description,        // J — DESCRIPTION
-        row.comments + (row.notes_for_reviewer ? '\n' + row.notes_for_reviewer : ''), // K — NOTES
-        '',                     // L — PLAT (blank)
+        num,                                        // A — #
+        getCnxInstrumentLabel(row.instrument_type), // B — INSTRUMENT (Death/Marriage/type)
+        row.vol_page,                               // C — VOL/PG
+        formatCnxDate(row.doc_date),                // D — INSTRUMENT DATE
+        formatCnxDate(row.recorded_date),           // E — FILE DATE
+        row.grantor,                                // F — GRANTOR
+        row.grantee,                                // G — GRANTEE
+        cleanDesc,                                  // H — DESCRIPTION (no boundary calls)
+        cleanNotes,                                 // I — NOTES AND REFERENCES (no boundary calls)
+        '',                                         // J — PLAT (blank)
       ];
+
       cells.forEach((val, i) => {
         const cell = ws.getCell(rowNum, i + 1);
         cell.value = val ?? '';
         cell.font = { name: 'Arial Narrow', size: 10 };
         cell.alignment = {
-          wrapText: true,
-          vertical: 'top',
+          wrapText: true, vertical: 'top',
           horizontal: i === 0 ? 'center' : 'left',
         };
         cell.border = allBorders;
@@ -196,16 +304,10 @@ export async function POST(req: NextRequest) {
 
     // Sort rows into sections
     const sections: Record<string, InstrumentRow[]> = {
-      SURFACE: [],
-      LEASEHOLD: [],
-      MORTGAGES: [],
-      ROW: [],
-      OUTSALES: [],
-      MISC: [],
+      SURFACE: [], LEASEHOLD: [], MORTGAGES: [], ROW: [], OUTSALES: [], MISC: [],
     };
     for (const row of rows) {
-      const section = getCnxSection(row.instrument_type);
-      sections[section].push(row);
+      sections[getCnxSection(row.instrument_type)].push(row);
     }
 
     const sectionDefs = [
@@ -226,7 +328,6 @@ export async function POST(req: NextRequest) {
 
       const sectionRows = sections[key];
       if (sectionRows.length === 0) {
-        // Write one blank placeholder row
         writeDataRow(currentRow, instrumentNum, {
           vol_page: '', instrument_type: '', doc_date: '', recorded_date: '',
           grantor: '', grantee: '', description: '', comments: '',
@@ -242,7 +343,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Build and return the file
     const buffer = await wb.xlsx.writeBuffer();
     return new NextResponse(buffer, {
       status: 200,
