@@ -66,6 +66,7 @@ export default function Home() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [tableSort, setTableSort] = useState<'recorded_date' | 'doc_date'>('recorded_date');
   const [tableSortDirection, setTableSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [outputFormat, setOutputFormat] = useState<'bop' | 'cnx'>('bop');
 
   function handlePasswordSubmit() {
     if (passwordInput === 'BOP2026') {
@@ -109,7 +110,6 @@ export default function Home() {
 
       showStatus(`Uploading ${total} file(s) directly to cloud storage...`, 'info');
 
-      // Upload directly from browser to Vercel Blob — bypasses Vercel function size limit entirely
       const uploadResults = await Promise.all(
         fileArray.map(async (file) => {
           const blob = await upload(file.name, file, {
@@ -139,9 +139,7 @@ export default function Home() {
               throw new Error(`Server error (${res.status}): ${errText}`);
             }
             const data = await res.json();
-            if (data.rows && data.rows.length > 0) {
-              allRows.push(...data.rows);
-            }
+            if (data.rows && data.rows.length > 0) allRows.push(...data.rows);
             if (data.error) allErrors.push({ file: originalName, error: data.error });
           } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
@@ -187,10 +185,15 @@ export default function Home() {
   async function exportToExcel() {
     if (rows.length === 0) { showStatus('No data to export', 'error'); return; }
     setIsExporting(true);
-    showStatus('Building formatted Excel file...', 'info');
+
+    const isCnx = outputFormat === 'cnx';
+    const endpoint = isCnx ? '/api/export-cnx' : '/api/export';
+    const sorted = getSorted(rows, sortField, sortDirection);
+
+    showStatus(`Building ${isCnx ? 'CNX' : 'BOP'} formatted Excel file...`, 'info');
+
     try {
-      const sorted = getSorted(rows, sortField, sortDirection);
-      const res = await fetch('/api/export', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -207,7 +210,8 @@ export default function Home() {
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       const safeName = (abstractorName || 'Abstractor').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const filename = `${safeName}_RunSheet_${parcelNumber || 'NoParcel'}.xlsx`;
+      const prefix = isCnx ? 'CNX' : 'BOP';
+      const filename = `${prefix}_${safeName}_RunSheet_${parcelNumber || 'NoParcel'}.xlsx`;
       a.href = blobUrl;
       a.download = filename;
       a.click();
@@ -409,8 +413,24 @@ export default function Home() {
             </label>
           </div>
 
+          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 600 }}>{'Output format:'}</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="outputFormat" value="bop" checked={outputFormat === 'bop'} onChange={() => setOutputFormat('bop')} />
+              {'BOP Abstract (default)'}
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+              <input type="radio" name="outputFormat" value="cnx" checked={outputFormat === 'cnx'} onChange={() => setOutputFormat('cnx')} />
+              {'CNX Run Sheet'}
+            </label>
+          </div>
+
           <button className="btn-export" onClick={exportToExcel} disabled={isProcessing || isExporting}>
-            {isExporting ? 'Building Excel...' : 'Export to Excel'}
+            {isExporting
+              ? 'Building Excel...'
+              : outputFormat === 'cnx'
+                ? 'Export to CNX Format'
+                : 'Export to Excel'}
           </button>
         </div>
       )}
